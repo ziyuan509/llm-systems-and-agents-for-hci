@@ -68,7 +68,7 @@
             <button id="draft-contract">Draft Contract</button>
           </div>
 
-          <div class="card">
+          <div class="card" id="contract-card">
             <h3>Delegation Contract</h3>
             <div class="contract-group">
               <label><input id="source-official" type="checkbox" checked /> Official announcements</label>
@@ -148,6 +148,14 @@
             <h3>Sources consulted</h3>
             <ul id="sources-list" class="source-list"></ul>
           </div>
+
+          <div class="card">
+            <div class="card-header-inline">
+              <h3 id="runtime-log-title">Runtime trace</h3>
+              <span id="runtime-log-badge" class="mini-badge">Governance</span>
+            </div>
+            <ul id="runtime-log" class="runtime-log"></ul>
+          </div>
         </section>
 
         <aside class="panel panel-right">
@@ -190,8 +198,15 @@
             </p>
           </div>
 
+          <div class="card">
+            <h3>Condition behavior</h3>
+            <p id="condition-copy" class="microcopy condition-copy">
+              Governance UI exposes policy controls, runtime ask-back, and contract repair.
+            </p>
+          </div>
+
           <div class="card callout neutral" id="askback-panel">
-            <h3>Ask-back panel</h3>
+            <h3 id="askback-title">Ask-back panel</h3>
             <p id="askback-copy">
               The agent will pause here when a contract-relevant event occurs.
             </p>

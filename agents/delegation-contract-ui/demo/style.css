@@ -177,6 +177,28 @@ h3 {
   margin-bottom: 0;
 }
 
+.card-header-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mini-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 label {
   display: block;
   font-size: 13px;
@@ -247,6 +269,27 @@ textarea {
   font-size: 14px;
   font-weight: 400;
   cursor: pointer;
+}
+
+.is-locked {
+  position: relative;
+}
+
+.is-locked::after {
+  content: "Baseline condition: policy is fixed for comparison.";
+  display: block;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background-color: var(--bg-surface-alt);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.is-locked .contract-group,
+.is-locked .grid-2,
+.is-locked .microcopy {
+  opacity: 0.5;
 }
 
 input[type="checkbox"] {
@@ -387,14 +430,16 @@ button.disabled {
 }
 
 .source-list,
-.revision-list {
+.revision-list,
+.runtime-log {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .source-list li,
-.revision-list li {
+.revision-list li,
+.runtime-log li {
   padding: 16px;
   background-color: var(--bg-surface-alt);
   border-radius: var(--radius-sm);
@@ -408,6 +453,22 @@ button.disabled {
   margin-bottom: 4px;
   font-size: 15px;
   font-weight: 600;
+}
+
+.runtime-log {
+  list-style: none;
+}
+
+.runtime-log strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.runtime-log span {
+  display: block;
+  line-height: 1.45;
 }
 
 .runtime-grid {
@@ -468,6 +529,10 @@ button.disabled {
   color: var(--text-muted);
   margin-top: 8px;
   line-height: 1.4;
+}
+
+.condition-copy {
+  margin-top: 0;
 }
 
 .final-summary {

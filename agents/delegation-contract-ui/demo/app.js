@@ -3,8 +3,14 @@ const sourcesList = document.querySelector("#sources-list");
 const revisionList = document.querySelector("#revision-list");
 const finalSummary = document.querySelector("#final-summary");
 const askbackPanel = document.querySelector("#askback-panel");
+const askbackTitle = document.querySelector("#askback-title");
 const askbackCopy = document.querySelector("#askback-copy");
 const eventLogPreview = document.querySelector("#event-log-preview");
+const runtimeLog = document.querySelector("#runtime-log");
+const runtimeLogTitle = document.querySelector("#runtime-log-title");
+const runtimeLogBadge = document.querySelector("#runtime-log-badge");
+const conditionCopy = document.querySelector("#condition-copy");
+const contractCard = document.querySelector("#contract-card");
 
 const stageLabel = document.querySelector("#stage-label");
 const contractMode = document.querySelector("#contract-mode");
@@ -14,6 +20,12 @@ const complianceStatus = document.querySelector("#compliance-status");
 const runtimeConfidence = document.querySelector("#runtime-confidence");
 const escalationCount = document.querySelector("#escalation-count");
 
+const sourceOfficial = document.querySelector("#source-official");
+const sourceMajor = document.querySelector("#source-major");
+const sourceBlogs = document.querySelector("#source-blogs");
+const banForums = document.querySelector("#ban-forums");
+const timeBudgetSelect = document.querySelector("#time-budget");
+const toolScopeSelect = document.querySelector("#tool-scope");
 const confidenceThreshold = document.querySelector("#confidence-threshold");
 const escalationThreshold = document.querySelector("#escalation-threshold");
 const confidenceValue = document.querySelector("#confidence-value");
@@ -35,7 +47,110 @@ const sessionIdInput = document.querySelector("#session-id");
 const researcherNotesInput = document.querySelector("#researcher-notes");
 const sessionStatus = document.querySelector("#session-status");
 
-const sourceBlogs = document.querySelector("#source-blogs");
+const contractControls = [
+  sourceOfficial,
+  sourceMajor,
+  sourceBlogs,
+  banForums,
+  timeBudgetSelect,
+  toolScopeSelect,
+  confidenceThreshold,
+  escalationThreshold,
+];
+
+const conditionModes = {
+  governance: {
+    badge: "Governance",
+    runtimeTitle: "Runtime trace",
+    contractEditable: true,
+    stageLabel: "Runtime Governance",
+    draftButton: "Draft Contract",
+    startButton: "Start Research",
+    askbackTitle: "Ask-back panel",
+    askbackDefault:
+      "The agent will pause here when a contract-relevant event occurs.",
+    conditionCopy:
+      "Governance UI exposes editable policy controls, runtime ask-back, and explicit contract repair before rerun.",
+    contractModeIdle: "Draft",
+    contractModeActive: "Active",
+    approveLabel: "Approve Once",
+    reviseLabel: "Revise Contract",
+    denyLabel: "Deny Source",
+    rerunLabel: "Rerun from safe checkpoint",
+  },
+  blackbox: {
+    badge: "Black box",
+    runtimeTitle: "System internals hidden",
+    contractEditable: false,
+    stageLabel: "Black-box Run",
+    draftButton: "Load Baseline Preset",
+    startButton: "Start Baseline Run",
+    askbackTitle: "Run interruption",
+    askbackDefault:
+      "This baseline does not interrupt the run for contract repair. The system proceeds with its preset policy.",
+    conditionCopy:
+      "Black-box baseline hides editable policy and user repair. Participants only see high-level progress and the final answer.",
+    contractModeIdle: "Preset hidden",
+    contractModeActive: "Preset hidden",
+    approveLabel: "Approve Once",
+    reviseLabel: "Revise Contract",
+    denyLabel: "Deny Source",
+    rerunLabel: "Rerun from safe checkpoint",
+  },
+  trace: {
+    badge: "Trace",
+    runtimeTitle: "Execution trace",
+    contractEditable: false,
+    stageLabel: "Trace Oversight",
+    draftButton: "Load Trace Condition",
+    startButton: "Start Trace Run",
+    askbackTitle: "Trace inspector",
+    askbackDefault:
+      "This baseline reveals low-level execution steps instead of high-level contract repair controls.",
+    conditionCopy:
+      "Trace baseline shows step-level agent actions and conflict markers, but it does not expose policy repair as the primary interaction.",
+    contractModeIdle: "Preset hidden",
+    contractModeActive: "Trace visible",
+    approveLabel: "Continue Run",
+    reviseLabel: "Revise Contract",
+    denyLabel: "Deny Source",
+    rerunLabel: "Rerun from safe checkpoint",
+  },
+};
+
+const scenario = {
+  taskNote:
+    "User requests a short research brief with source trust constraints.",
+  sources: [
+    {
+      id: "official",
+      type: "official",
+      name: "Official product announcement",
+      note: "Primary source aligned with the vendor's public statement.",
+      budget: 2,
+      confidenceDelta: 8,
+      conflict: false,
+    },
+    {
+      id: "major",
+      type: "major",
+      name: "Major reporting summary",
+      note: "Secondary reporting that agrees on the core feature change.",
+      budget: 4,
+      confidenceDelta: 6,
+      conflict: false,
+    },
+    {
+      id: "blog",
+      type: "blog",
+      name: "Interpretive research blog",
+      note: "Offers a conflicting interpretation of rollout scope.",
+      budget: 4,
+      confidenceDelta: -13,
+      conflict: true,
+    },
+  ],
+};
 
 const state = {
   stage: "task_setup",
@@ -49,32 +164,46 @@ const state = {
   sources: [],
   revisions: [],
   eventLog: [],
+  runtimeLog: [],
   sessionActive: false,
   sessionId: null,
   sessionStartedAt: null,
-};
-
-const scenario = {
-  official: {
-    name: "Official product announcement",
-    trust: "Trusted",
-    note: "Primary source, aligned with contract.",
-  },
-  major: {
-    name: "Major reporting summary",
-    trust: "Trusted",
-    note: "Secondary summary, still within policy.",
-  },
-  blog: {
-    name: "Interpretive research blog",
-    trust: "Outside preferred policy",
-    note: "Conflicts with the official source on rollout scope.",
-  },
+  runtimeBudgetUsed: 0,
+  currentConfidence: null,
+  summaryText: "",
+  activeCondition: "governance",
+  queuedSteps: [],
+  pausedEvent: null,
+  timerId: null,
+  blockedSourceIds: [],
+  sourceOutcome: "governance_repair",
 };
 
 function setButtonEnabled(button, enabled) {
   button.disabled = !enabled;
   button.classList.toggle("disabled", !enabled);
+}
+
+function clearTimer() {
+  if (state.timerId) {
+    window.clearTimeout(state.timerId);
+    state.timerId = null;
+  }
+}
+
+function getConditionKey() {
+  const label = conditionIdSelect.value;
+  if (label === "Black-box baseline") {
+    return "blackbox";
+  }
+  if (label === "Trace baseline") {
+    return "trace";
+  }
+  return "governance";
+}
+
+function getConditionConfig() {
+  return conditionModes[state.activeCondition];
 }
 
 function addTimelineItem(title, note) {
@@ -90,6 +219,11 @@ function addSource(source) {
 function addRevision(note) {
   state.revisions.push(note);
   renderRevisions();
+}
+
+function addRuntimeLog(label, detail) {
+  state.runtimeLog.push({ label, detail });
+  renderRuntimeLog();
 }
 
 function renderTimeline() {
@@ -109,6 +243,13 @@ function renderTimeline() {
 
 function renderSources() {
   sourcesList.innerHTML = "";
+  if (!state.sources.length) {
+    const li = document.createElement("li");
+    li.textContent = "No sources consulted yet.";
+    sourcesList.appendChild(li);
+    return;
+  }
+
   state.sources.forEach((item) => {
     const li = document.createElement("li");
     li.innerHTML = `<strong>${item.name}</strong>${item.trust}: ${item.note}`;
@@ -132,6 +273,22 @@ function renderRevisions() {
   });
 }
 
+function renderRuntimeLog() {
+  runtimeLog.innerHTML = "";
+  if (!state.runtimeLog.length) {
+    const li = document.createElement("li");
+    li.textContent = "No runtime events yet.";
+    runtimeLog.appendChild(li);
+    return;
+  }
+
+  state.runtimeLog.slice(-10).forEach((entry) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${entry.label}</strong><span>${entry.detail}</span>`;
+    runtimeLog.appendChild(li);
+  });
+}
+
 function renderSummary() {
   if (!state.completed) {
     finalSummary.textContent =
@@ -141,15 +298,11 @@ function renderSummary() {
   }
 
   finalSummary.classList.remove("empty");
-  finalSummary.textContent =
-    "Research brief complete.\n\n" +
-    "Result:\nThe feature change is supported by the official announcement and major reporting, but a conflicting interpretation from a secondary blog was excluded after the user tightened the contract.\n\n" +
-    "Governance impact:\n- 1 escalation triggered by source-policy mismatch and conflicting evidence\n- Contract revised to remove research blogs from allowed sources\n- Synthesis rerun from the last safe checkpoint\n- Final output is shorter but more reliable under the chosen policy";
+  finalSummary.textContent = state.summaryText;
 }
 
 function renderEventLogPreview() {
   eventLogPreview.innerHTML = "";
-
   if (!state.eventLog.length) {
     const li = document.createElement("li");
     li.textContent = "No events logged yet.";
@@ -172,6 +325,14 @@ function createSessionId() {
   return `session-${Date.now().toString(36)}`;
 }
 
+function getTimeBudgetLimit() {
+  return Number.parseInt(timeBudgetSelect.value, 10);
+}
+
+function clampConfidence(value) {
+  return Math.max(35, Math.min(92, value));
+}
+
 function logEvent(type, payload = {}) {
   if (!state.sessionActive) {
     return;
@@ -190,24 +351,15 @@ function logEvent(type, payload = {}) {
 
 function currentContractSnapshot() {
   return {
-    officialSources: document.querySelector("#source-official").checked,
-    majorReporting: document.querySelector("#source-major").checked,
+    officialSources: sourceOfficial.checked,
+    majorReporting: sourceMajor.checked,
     researchBlogs: sourceBlogs.checked,
-    banForums: document.querySelector("#ban-forums").checked,
-    timeBudget: document.querySelector("#time-budget").value,
-    toolScope: document.querySelector("#tool-scope").value,
+    banForums: banForums.checked,
+    timeBudget: timeBudgetSelect.value,
+    toolScope: toolScopeSelect.value,
     confidenceThreshold: Number(confidenceThreshold.value),
     escalationThreshold: Number(escalationThreshold.value),
   };
-}
-
-function resetAskbackPanel() {
-  askbackPanel.className = "card callout neutral";
-  askbackCopy.textContent =
-    "The agent will pause here when a contract-relevant event occurs.";
-  setButtonEnabled(approveOnceButton, false);
-  setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
 }
 
 function syncSliders() {
@@ -215,7 +367,42 @@ function syncSliders() {
   escalationValue.textContent = escalationThreshold.value;
 }
 
-function initialize() {
+function setContractControlsLocked(locked) {
+  contractCard.classList.toggle("is-locked", locked);
+  contractControls.forEach((control) => {
+    control.disabled = locked;
+  });
+}
+
+function applyConditionUI() {
+  state.activeCondition = getConditionKey();
+  const config = getConditionConfig();
+
+  runtimeLogTitle.textContent = config.runtimeTitle;
+  runtimeLogBadge.textContent = config.badge;
+  conditionCopy.textContent = config.conditionCopy;
+  draftContractButton.textContent = config.draftButton;
+  startResearchButton.textContent = config.startButton;
+  approveOnceButton.textContent = config.approveLabel;
+  reviseContractButton.textContent = config.reviseLabel;
+  denySourceButton.textContent = config.denyLabel;
+  rerunStepButton.textContent = config.rerunLabel;
+  contractMode.textContent = config.contractModeIdle;
+  setContractControlsLocked(!config.contractEditable);
+}
+
+function resetAskbackPanel() {
+  const config = getConditionConfig();
+  askbackPanel.className = "card callout neutral";
+  askbackTitle.textContent = config.askbackTitle;
+  askbackCopy.textContent = config.askbackDefault;
+  setButtonEnabled(approveOnceButton, false);
+  setButtonEnabled(reviseContractButton, false);
+  setButtonEnabled(denySourceButton, false);
+}
+
+function resetRunState() {
+  clearTimer();
   state.stage = "task_setup";
   state.contractDrafted = false;
   state.runStarted = false;
@@ -226,28 +413,48 @@ function initialize() {
   state.timeline = [];
   state.sources = [];
   state.revisions = [];
+  state.runtimeLog = [];
+  state.runtimeBudgetUsed = 0;
+  state.currentConfidence = 68;
+  state.summaryText = "";
+  state.queuedSteps = [];
+  state.pausedEvent = null;
+  state.blockedSourceIds = [];
+  state.sourceOutcome = "governance_repair";
+}
 
+function setDefaultControls() {
+  sourceOfficial.checked = true;
+  sourceMajor.checked = true;
   sourceBlogs.checked = true;
+  banForums.checked = true;
+  timeBudgetSelect.value = "15 minutes";
+  toolScopeSelect.value = "Search + synthesis";
   confidenceThreshold.value = 70;
   escalationThreshold.value = 55;
   syncSliders();
+}
+
+function initialize() {
+  resetRunState();
+  setDefaultControls();
+  applyConditionUI();
 
   stageLabel.textContent = "Task Setup";
-  contractMode.textContent = "Draft";
   agentState.textContent = "Waiting for task";
   budgetStatus.textContent = "0 / 15 min";
   complianceStatus.textContent = "No active run";
   runtimeConfidence.textContent = "N/A";
   escalationCount.textContent = "0";
   sessionIdInput.value = state.sessionId || "";
+  sessionStatus.textContent = state.sessionActive
+    ? `Session active: ${state.sessionId}`
+    : "Start a session before running the scenario so events can be logged.";
 
-  addTimelineItem(
-    "Task received",
-    "User requests a short research brief with source trust constraints."
-  );
-
+  addTimelineItem("Task received", scenario.taskNote);
   renderSources();
   renderRevisions();
+  renderRuntimeLog();
   renderSummary();
   renderEventLogPreview();
   resetAskbackPanel();
@@ -257,109 +464,379 @@ function initialize() {
 }
 
 function draftContract() {
+  const config = getConditionConfig();
   state.contractDrafted = true;
   state.stage = "contract_setup";
+
   stageLabel.textContent = "Contract Setup";
-  contractMode.textContent = "Drafted by system";
-  agentState.textContent = "Ready for review";
+  contractMode.textContent = config.contractEditable
+    ? "Drafted by system"
+    : config.contractModeIdle;
+  agentState.textContent = config.contractEditable
+    ? "Ready for review"
+    : "Preset loaded";
 
   addTimelineItem(
-    "Draft contract prepared",
-    "System proposes trusted sources, budgets, and escalation defaults."
+    config.contractEditable ? "Draft contract prepared" : "Baseline preset loaded",
+    config.contractEditable
+      ? "System proposes trusted sources, budgets, and escalation defaults."
+      : "System loads a fixed policy so the participant sees the comparison condition."
+  );
+
+  addRuntimeLog(
+    "Planner",
+    config.contractEditable
+      ? "Policy controls are available before execution starts."
+      : "This condition fixes the policy before execution."
   );
 
   setButtonEnabled(startResearchButton, true);
   logEvent("contract_drafted", {
     contract: currentContractSnapshot(),
+    condition: state.activeCondition,
   });
+}
+
+function buildRunQueue() {
+  const contract = currentContractSnapshot();
+  const steps = [
+    {
+      type: "plan",
+      label: "Task parsed into a bounded research loop.",
+    },
+  ];
+
+  if (contract.officialSources) {
+    steps.push({ type: "collect", source: scenario.sources[0] });
+  } else {
+    steps.push({
+      type: "skip",
+      source: scenario.sources[0],
+      reason: "Official announcements were disabled in the current configuration.",
+    });
+  }
+
+  if (contract.majorReporting) {
+    steps.push({ type: "collect", source: scenario.sources[1] });
+  } else {
+    steps.push({
+      type: "skip",
+      source: scenario.sources[1],
+      reason: "Major reporting was disabled in the current configuration.",
+    });
+  }
+
+  steps.push({ type: "collect", source: scenario.sources[2] });
+  steps.push({ type: "synthesize" });
+  return steps;
 }
 
 function startResearch() {
+  if (!state.contractDrafted || state.runStarted) {
+    return;
+  }
+
+  const config = getConditionConfig();
   state.runStarted = true;
   state.stage = "runtime";
-  stageLabel.textContent = "Runtime Governance";
-  contractMode.textContent = "Active";
-  agentState.textContent = "Collecting evidence";
-  budgetStatus.textContent = "6 / 15 min";
-  complianceStatus.textContent = "Within contract";
-  runtimeConfidence.textContent = "74%";
+  state.queuedSteps = buildRunQueue();
+  state.currentConfidence = 68;
+
+  stageLabel.textContent = config.stageLabel;
+  contractMode.textContent = config.contractModeActive;
+  agentState.textContent = "Planning bounded research loop";
+  budgetStatus.textContent = `0 / ${getTimeBudgetLimit()} min`;
+  complianceStatus.textContent = config.contractEditable
+    ? "Within contract"
+    : "Preset condition active";
+  runtimeConfidence.textContent = `${state.currentConfidence}%`;
 
   addTimelineItem(
     "Execution started",
-    "Agent begins a bounded research loop under the active contract."
+    config.contractEditable
+      ? "Agent begins a bounded research loop under the active contract."
+      : "Agent begins the same research task under a comparison condition."
+  );
+  addRuntimeLog(
+    "Loop start",
+    `${state.queuedSteps.length - 1} execution steps queued for this scenario.`
   );
 
-  addSource(scenario.official);
-  addSource(scenario.major);
-  addTimelineItem(
-    "Trusted sources collected",
-    "Official announcement and major reporting agree on the core feature change."
-  );
   logEvent("research_started", {
     contract: currentContractSnapshot(),
-    budgetStatus: "6 / 15 min",
+    condition: state.activeCondition,
+    queuedSteps: state.queuedSteps.map((step) => step.type),
   });
 
-  window.setTimeout(triggerEscalation, 400);
+  scheduleNextStep(320);
 }
 
-function triggerEscalation() {
+function scheduleNextStep(delay = 260) {
+  clearTimer();
+  state.timerId = window.setTimeout(runNextStep, delay);
+}
+
+function runNextStep() {
+  if (state.pausedEvent || state.completed) {
+    return;
+  }
+
+  const step = state.queuedSteps.shift();
+  if (!step) {
+    completeRun(state.sourceOutcome);
+    return;
+  }
+
+  if (step.type === "plan") {
+    addRuntimeLog("Planner", step.label);
+    scheduleNextStep();
+    return;
+  }
+
+  if (step.type === "skip") {
+    addRuntimeLog("Skip", `${step.source.name} skipped. ${step.reason}`);
+    scheduleNextStep();
+    return;
+  }
+
+  if (step.type === "collect") {
+    handleSourceStep(step.source);
+    return;
+  }
+
+  if (step.type === "synthesize") {
+    handleSynthesisStep();
+  }
+}
+
+function makeSourceRecord(source, trust, note) {
+  return {
+    name: source.name,
+    trust,
+    note,
+  };
+}
+
+function updateRuntimeStatus() {
+  budgetStatus.textContent = `${state.runtimeBudgetUsed} / ${getTimeBudgetLimit()} min`;
+  runtimeConfidence.textContent = `${state.currentConfidence}%`;
+}
+
+function evaluateSource(source) {
+  const contract = currentContractSnapshot();
+  const outsidePolicy = source.type === "blog" && !contract.researchBlogs;
+  const conflict = source.conflict;
+  const riskScore = outsidePolicy ? 84 : conflict ? 64 : 28;
+
+  return {
+    source,
+    outsidePolicy,
+    conflict,
+    riskScore,
+    shouldEscalate:
+      state.activeCondition === "governance" &&
+      riskScore >= contract.escalationThreshold,
+    shouldPauseTrace: state.activeCondition === "trace" && conflict,
+  };
+}
+
+function handleSourceStep(source) {
+  const evaluation = evaluateSource(source);
+  state.runtimeBudgetUsed += source.budget;
+  state.currentConfidence = clampConfidence(
+    state.currentConfidence + source.confidenceDelta
+  );
+
+  addRuntimeLog("Search", `Checked ${source.name}. ${source.note}`);
+
+  if (!evaluation.outsidePolicy) {
+    addSource(
+      makeSourceRecord(
+        source,
+        source.conflict ? "Conflicting / low-trust" : "Trusted",
+        evaluation.conflict
+          ? "Conflicts with earlier evidence and lowers synthesis confidence."
+          : source.note
+      )
+    );
+  } else {
+    addSource(
+      makeSourceRecord(
+        source,
+        "Blocked by current policy",
+        "Found during search, but outside the revised source policy."
+      )
+    );
+  }
+
+  if (source.id === "major") {
+    addTimelineItem(
+      "Trusted sources collected",
+      "Official announcement and major reporting agree on the core feature change."
+    );
+  }
+
+  if (evaluation.shouldEscalate) {
+    triggerGovernanceAskback(evaluation);
+    return;
+  }
+
+  if (evaluation.shouldPauseTrace) {
+    triggerTracePause(evaluation);
+    return;
+  }
+
+  if (evaluation.conflict && state.activeCondition === "blackbox") {
+    state.sourceOutcome = "blackbox_hidden_conflict";
+    complianceStatus.textContent = "Hidden conflict absorbed into baseline run";
+    addTimelineItem(
+      "Conflicting source absorbed",
+      "The baseline keeps running without exposing a policy repair path."
+    );
+    addRuntimeLog(
+      "Policy hidden",
+      "Low-trust conflicting evidence remains in the run without user intervention."
+    );
+  } else if (evaluation.conflict) {
+    complianceStatus.textContent = evaluation.outsidePolicy
+      ? "Source blocked by current policy"
+      : "Conflict noted below escalation threshold";
+    state.sourceOutcome = evaluation.outsidePolicy
+      ? "denied_for_run"
+      : "governance_no_pause";
+  } else {
+    complianceStatus.textContent =
+      state.activeCondition === "governance"
+        ? "Within contract"
+        : "Preset condition active";
+  }
+
+  updateRuntimeStatus();
+  logEvent("source_processed", {
+    source: source.name,
+    conflict: evaluation.conflict,
+    outsidePolicy: evaluation.outsidePolicy,
+    riskScore: evaluation.riskScore,
+  });
+  scheduleNextStep();
+}
+
+function triggerGovernanceAskback(evaluation) {
+  state.pausedEvent = evaluation;
   state.escalationActive = true;
   state.escalationEvents += 1;
   state.stage = "askback";
+  state.sourceOutcome = "governance_repair";
 
   stageLabel.textContent = "Ask-Back";
-  agentState.textContent = "Paused for user decision";
-  budgetStatus.textContent = "10 / 15 min";
-  complianceStatus.textContent = "Conflict outside preferred policy";
-  runtimeConfidence.textContent = "61%";
+  agentState.textContent = "Paused for policy decision";
+  complianceStatus.textContent = evaluation.outsidePolicy
+    ? "Candidate source violates current policy"
+    : "Conflicting evidence exceeds escalation threshold";
   escalationCount.textContent = String(state.escalationEvents);
+  updateRuntimeStatus();
 
-  addSource(scenario.blog);
   addTimelineItem(
     "Escalation triggered",
-    "A conflicting blog source falls outside the preferred source policy."
+    evaluation.outsidePolicy
+      ? "A candidate source falls outside the active source policy."
+      : "A conflicting source crosses the escalation threshold and requires contract guidance."
+  );
+  addRuntimeLog(
+    "Escalation",
+    `Paused at risk score ${evaluation.riskScore} for ${evaluation.source.name}.`
   );
 
   askbackPanel.className = "card callout warning";
-  askbackCopy.textContent =
-    "The agent found a conflicting interpretation from a research blog. This source is outside the preferred policy. Approve it once, revise the contract, or deny it.";
-
+  askbackTitle.textContent = "Ask-back panel";
+  askbackCopy.textContent = evaluation.outsidePolicy
+    ? "The agent found a conflicting source that is outside the current contract. Approve it once, revise the contract, or deny it for this run."
+    : "The agent found a low-trust conflicting source. The contract allows you to approve the exception, revise the policy, or deny the source for this run.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, true);
   setButtonEnabled(denySourceButton, true);
+
   logEvent("askback_triggered", {
-    trigger: "source_conflict_outside_policy",
-    source: scenario.blog.name,
+    source: evaluation.source.name,
+    riskScore: evaluation.riskScore,
+    outsidePolicy: evaluation.outsidePolicy,
+  });
+}
+
+function triggerTracePause(evaluation) {
+  state.pausedEvent = evaluation;
+  state.escalationActive = true;
+  state.escalationEvents += 1;
+  state.stage = "trace_pause";
+  state.sourceOutcome = "trace_continued";
+
+  stageLabel.textContent = "Trace Inspection";
+  agentState.textContent = "Paused for trace review";
+  complianceStatus.textContent = "Low-level conflict marker surfaced";
+  escalationCount.textContent = String(state.escalationEvents);
+  updateRuntimeStatus();
+
+  addTimelineItem(
+    "Trace checkpoint reached",
+    "The baseline pauses at a low-level conflict marker rather than a contract repair prompt."
+  );
+  addRuntimeLog(
+    "Trace break",
+    "Extractor disagreement detected between official announcement and blog interpretation."
+  );
+
+  askbackPanel.className = "card callout neutral";
+  askbackTitle.textContent = "Trace inspector";
+  askbackCopy.textContent =
+    "Low-level trace: query -> fetch -> extract -> compare. The latest extraction disagrees with prior evidence. Continue the run to keep the conflicting source in the final synthesis.";
+  setButtonEnabled(approveOnceButton, true);
+  setButtonEnabled(reviseContractButton, false);
+  setButtonEnabled(denySourceButton, false);
+
+  logEvent("trace_pause", {
+    source: evaluation.source.name,
+    riskScore: evaluation.riskScore,
   });
 }
 
 function reviseContract() {
-  if (!state.escalationActive) {
+  if (!state.pausedEvent || state.activeCondition !== "governance") {
     return;
   }
 
   state.revised = true;
   state.stage = "repair";
+  state.escalationActive = false;
+  state.pausedEvent = null;
+  state.blockedSourceIds.push("blog");
+  state.currentConfidence = clampConfidence(state.currentConfidence + 6);
   sourceBlogs.checked = false;
-  contractMode.textContent = "Revised";
+
   stageLabel.textContent = "Repair and Rerun";
+  contractMode.textContent = "Revised";
   agentState.textContent = "Waiting for rerun";
+  complianceStatus.textContent = "Revised policy ready for checkpoint rerun";
 
   addRevision("Removed research blogs from allowed sources after escalation.");
   addTimelineItem(
     "Contract revised",
     "User tightens source policy instead of approving the exception."
   );
+  addRuntimeLog(
+    "Repair",
+    "Participant removed research blogs and prepared a rerun from the last safe checkpoint."
+  );
 
   askbackPanel.className = "card callout safe";
+  askbackTitle.textContent = "Repair recorded";
   askbackCopy.textContent =
-    "Revision recorded. The system can now rerun from the last safe checkpoint using the updated contract.";
-
+    "Revision recorded. The system can rerun the synthesis step without the excluded source type.";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
   setButtonEnabled(rerunStepButton, true);
+  updateRuntimeStatus();
+
   logEvent("contract_revised", {
     revision: "Removed research blogs from allowed sources.",
     contract: currentContractSnapshot(),
@@ -367,33 +844,191 @@ function reviseContract() {
 }
 
 function rerunStep() {
-  if (!state.revised) {
+  if (!state.revised || state.activeCondition !== "governance") {
     return;
   }
 
-  state.completed = true;
-  state.stage = "final_summary";
-  stageLabel.textContent = "Final Summary";
-  agentState.textContent = "Run complete";
-  budgetStatus.textContent = "12 / 15 min";
+  state.stage = "rerun";
+  state.sourceOutcome = "governance_repair";
+  state.runtimeBudgetUsed += 2;
+  state.currentConfidence = clampConfidence(state.currentConfidence + 8);
+
+  stageLabel.textContent = "Rerun";
+  agentState.textContent = "Rerunning synthesis";
   complianceStatus.textContent = "Contract satisfied after repair";
-  runtimeConfidence.textContent = "82%";
 
   addTimelineItem(
     "Synthesis rerun",
     "The agent reruns the synthesis step without the excluded source type."
   );
+  addRuntimeLog(
+    "Rerun",
+    "Restarted from the last safe checkpoint with blogs excluded from synthesis."
+  );
+
+  setButtonEnabled(rerunStepButton, false);
+  updateRuntimeStatus();
+  logEvent("rerun_started", {
+    blockedSources: [...state.blockedSourceIds],
+  });
+
+  scheduleCompletion("governance_repair");
+}
+
+function scheduleCompletion(outcome) {
+  clearTimer();
+  state.timerId = window.setTimeout(() => completeRun(outcome), 320);
+}
+
+function handleSynthesisStep() {
+  state.stage = "synthesis";
+  agentState.textContent = "Synthesizing research brief";
+  complianceStatus.textContent =
+    state.activeCondition === "blackbox"
+      ? "Baseline preset completed"
+      : "Preparing final synthesis";
+
+  addRuntimeLog(
+    "Synthesize",
+    "Combining collected evidence into the final research brief."
+  );
+  updateRuntimeStatus();
+
+  if (state.activeCondition === "blackbox") {
+    state.sourceOutcome = "blackbox_hidden_conflict";
+  } else if (state.activeCondition === "trace") {
+    state.sourceOutcome = "trace_continued";
+  } else if (state.sourceOutcome === "governance_repair") {
+    state.sourceOutcome = state.pausedEvent ? "governance_repair" : "governance_no_pause";
+  }
+
+  scheduleCompletion(state.sourceOutcome);
+}
+
+function buildSummaryText(outcome) {
+  if (outcome === "governance_repair") {
+    return (
+      "Research brief complete.\n\n" +
+      "Result:\nThe final answer relies on the official announcement and major reporting. A conflicting blog interpretation was excluded after the participant revised the delegation contract.\n\n" +
+      "Governance impact:\n" +
+      "- 1 escalation triggered by conflicting evidence\n" +
+      "- Contract revised to remove research blogs\n" +
+      "- Synthesis rerun from the last safe checkpoint\n" +
+      "- Final answer is shorter but more reliable under the chosen policy"
+    );
+  }
+
+  if (outcome === "approved_exception") {
+    return (
+      "Research brief complete.\n\n" +
+      "Result:\nThe final answer cites official and major sources, but also carries a one-time exception for the conflicting blog interpretation.\n\n" +
+      "Governance impact:\n" +
+      "- 1 escalation triggered by conflicting evidence\n" +
+      "- Participant approved a one-time exception\n" +
+      "- No contract revision was recorded\n" +
+      "- Final answer is broader but less tightly governed"
+    );
+  }
+
+  if (outcome === "denied_for_run") {
+    return (
+      "Research brief complete.\n\n" +
+      "Result:\nThe final answer excludes the conflicting blog for this run, but the broader contract was not changed for future runs.\n\n" +
+      "Governance impact:\n" +
+      "- 1 escalation triggered by conflicting evidence\n" +
+      "- Source denied for this run only\n" +
+      "- No policy repair was stored\n" +
+      "- Future runs could hit the same issue again"
+    );
+  }
+
+  if (outcome === "trace_continued") {
+    return (
+      "Research brief complete.\n\n" +
+      "Result:\nThe final answer includes the conflicting interpretation after the participant inspected the execution trace and continued the run.\n\n" +
+      "Trace condition impact:\n" +
+      "- 1 trace checkpoint exposed low-level extraction disagreement\n" +
+      "- Participant continued the run without changing policy\n" +
+      "- Oversight happened at the execution-step level\n" +
+      "- The interface explains what the agent did more than what policy changed"
+    );
+  }
+
+  if (outcome === "blackbox_hidden_conflict") {
+    return (
+      "Research brief complete.\n\n" +
+      "Result:\nThe final answer blends official reporting with a conflicting secondary interpretation. The participant never received a repair opportunity during the run.\n\n" +
+      "Black-box baseline impact:\n" +
+      "- No intervention point was offered during execution\n" +
+      "- Policy assumptions remained hidden\n" +
+      "- Conflicting evidence stayed in the synthesis path\n" +
+      "- Trust decisions are harder to attribute or audit afterward"
+    );
+  }
+
+  return (
+    "Research brief complete.\n\n" +
+    "Result:\nThe final answer stayed within the original policy and no escalation was triggered.\n\n" +
+    "Run impact:\n" +
+    "- The configured threshold tolerated the observed conflict\n" +
+    "- No repair action was required\n" +
+    "- The result reflects the initial delegation contract"
+  );
+}
+
+function completeRun(outcome) {
+  clearTimer();
+  state.completed = true;
+  state.runStarted = false;
+  state.escalationActive = false;
+  state.pausedEvent = null;
+  state.stage = "final_summary";
+  state.summaryText = buildSummaryText(outcome);
+  state.currentConfidence =
+    outcome === "governance_repair"
+      ? 84
+      : outcome === "blackbox_hidden_conflict"
+        ? 71
+        : outcome === "trace_continued"
+          ? 74
+          : 78;
+
+  stageLabel.textContent = "Final Summary";
+  agentState.textContent = "Run complete";
+  complianceStatus.textContent =
+    outcome === "governance_repair"
+      ? "Contract satisfied after repair"
+      : outcome === "blackbox_hidden_conflict"
+        ? "Outcome produced without repair"
+        : "Outcome ready for review";
+  updateRuntimeStatus();
+
   addTimelineItem(
-    "Governance-aware output produced",
-    "Final answer explains how the contract changed the result."
+    outcome === "blackbox_hidden_conflict"
+      ? "Black-box output produced"
+      : outcome === "trace_continued"
+        ? "Trace-informed output produced"
+        : "Governance-aware output produced",
+    outcome === "governance_repair"
+      ? "Final answer explains how the contract changed the result."
+      : "Final answer reflects the interaction condition used during execution."
+  );
+  addRuntimeLog(
+    "Complete",
+    `Run finished with outcome: ${outcome.replaceAll("_", " ")}.`
   );
 
   renderSummary();
+  resetAskbackPanel();
+  setButtonEnabled(startResearchButton, false);
   setButtonEnabled(rerunStepButton, false);
+
   logEvent("run_completed", {
-    finalConfidence: "82%",
+    outcome,
+    finalConfidence: state.currentConfidence,
     escalationCount: state.escalationEvents,
     revisions: [...state.revisions],
+    runtimeLogLength: state.runtimeLog.length,
   });
 }
 
@@ -405,6 +1040,7 @@ function startStudySession() {
   sessionIdInput.value = state.sessionId;
   sessionStatus.textContent = `Session active: ${state.sessionId}`;
   setButtonEnabled(exportLogButton, true);
+
   logEvent("session_started", {
     sessionStartedAt: state.sessionStartedAt,
     participantId: participantIdInput.value.trim() || null,
@@ -427,6 +1063,7 @@ function exportSessionLog() {
     finalStage: state.stage,
     finalContract: currentContractSnapshot(),
     finalRevisions: [...state.revisions],
+    runtimeLog: [...state.runtimeLog],
     eventLog: state.eventLog,
   };
 
@@ -443,6 +1080,7 @@ function exportSessionLog() {
   URL.revokeObjectURL(url);
   logEvent("session_exported", {
     eventCount: state.eventLog.length,
+    runtimeLogLength: state.runtimeLog.length,
   });
 }
 
@@ -455,7 +1093,26 @@ startSessionButton.addEventListener("click", startStudySession);
 exportLogButton.addEventListener("click", exportSessionLog);
 
 approveOnceButton.addEventListener("click", () => {
-  if (!state.escalationActive) {
+  if (!state.pausedEvent) {
+    return;
+  }
+
+  if (state.activeCondition === "trace") {
+    addRevision("Participant continued after inspecting low-level trace output.");
+    addTimelineItem(
+      "Trace reviewed",
+      "Participant continued the run after seeing step-level execution evidence."
+    );
+    addRuntimeLog(
+      "Continue",
+      "Trace review complete. Conflicting source remains in the final synthesis."
+    );
+    state.pausedEvent = null;
+    state.escalationActive = false;
+    scheduleCompletion("trace_continued");
+    logEvent("trace_continue", {
+      source: "Interpretive research blog",
+    });
     return;
   }
 
@@ -464,18 +1121,20 @@ approveOnceButton.addEventListener("click", () => {
     "One-time exception approved",
     "This path keeps the run moving but weakens the governance argument."
   );
-  askbackCopy.textContent =
-    "One-time approval recorded. Reset the demo if you want to show the repair-and-rerun path.";
-  setButtonEnabled(approveOnceButton, false);
-  setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
+  addRuntimeLog(
+    "Exception",
+    "Participant allowed the low-trust source once without revising the policy."
+  );
+  state.pausedEvent = null;
+  state.escalationActive = false;
+  scheduleCompletion("approved_exception");
   logEvent("approve_once", {
-    source: scenario.blog.name,
+    source: "Interpretive research blog",
   });
 });
 
 denySourceButton.addEventListener("click", () => {
-  if (!state.escalationActive) {
+  if (!state.pausedEvent || state.activeCondition !== "governance") {
     return;
   }
 
@@ -484,33 +1143,40 @@ denySourceButton.addEventListener("click", () => {
     "Source denied",
     "The run rejects the conflicting source but does not revise the broader policy."
   );
-  askbackCopy.textContent =
-    "Source denied for this run. Reset the demo if you want to show explicit contract revision.";
-  setButtonEnabled(approveOnceButton, false);
-  setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
+  addRuntimeLog(
+    "Deny",
+    "Participant excluded the conflicting source for this run only."
+  );
+  state.pausedEvent = null;
+  state.escalationActive = false;
+  scheduleCompletion("denied_for_run");
   logEvent("deny_source", {
-    source: scenario.blog.name,
+    source: "Interpretive research blog",
   });
 });
 
 confidenceThreshold.addEventListener("input", syncSliders);
 escalationThreshold.addEventListener("input", syncSliders);
+
 participantIdInput.addEventListener("change", () => {
   logEvent("participant_updated", {
     participantId: participantIdInput.value.trim() || null,
   });
 });
+
 conditionIdSelect.addEventListener("change", () => {
   logEvent("condition_updated", {
     condition: conditionIdSelect.value,
   });
+  initialize();
 });
+
 researcherNotesInput.addEventListener("change", () => {
   logEvent("researcher_notes_updated", {
     researcherNotes: researcherNotesInput.value.trim() || null,
   });
 });
+
 document.querySelectorAll("input[type='checkbox'], select").forEach((element) => {
   if (element.id === "condition-id") {
     return;
@@ -524,6 +1190,7 @@ document.querySelectorAll("input[type='checkbox'], select").forEach((element) =>
     });
   });
 });
+
 confidenceThreshold.addEventListener("change", () => {
   logEvent("contract_control_changed", {
     control: "confidence-threshold",
@@ -531,6 +1198,7 @@ confidenceThreshold.addEventListener("change", () => {
     contract: currentContractSnapshot(),
   });
 });
+
 escalationThreshold.addEventListener("change", () => {
   logEvent("contract_control_changed", {
     control: "escalation-threshold",
