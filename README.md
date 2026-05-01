@@ -53,6 +53,7 @@ Current preferred framing:
 - research questions
 - related-work map
 - evaluation plan
+- first clickable demo prototype with study logging in `agents/delegation-contract-ui/demo/`
 
 ## Next Milestone
 
@@ -63,3 +64,11 @@ Build a minimal prototype that supports:
 - contract revision after conflicts or bad sources
 
 See `ROADMAP.md` and `agents/delegation-contract-ui/SPEC.md`.
+
+## Local Demo
+
+The current local demo is in:
+
+- `agents/delegation-contract-ui/demo/`
+
+Open `agents/delegation-contract-ui/demo/index.html` in a browser to run the prototype.

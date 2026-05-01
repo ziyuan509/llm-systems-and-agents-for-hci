@@ -34,5 +34,7 @@ Build a minimal prototype that demonstrates:
 - `SCENARIO.md`
 - `TASKS.md`
 - `DECISIONS.md`
+- `DEMO_BUILD_PLAN.md`
+- `demo/`
 
 See these files to move from concept framing to prototype implementation.

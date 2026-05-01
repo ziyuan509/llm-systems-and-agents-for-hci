@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delegation Contract Demo</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">delegation-contract-ui</p>
+          <h1>Governable Research Agent Demo</h1>
+          <p class="hero-copy">
+            A governance-first interface for deep research delegation.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="reset-demo" class="secondary">Reset Demo</button>
+        </div>
+      </header>
+
+      <section class="status-strip">
+        <div class="status-card">
+          <span class="status-label">Current stage</span>
+          <strong id="stage-label">Task Setup</strong>
+        </div>
+        <div class="status-card">
+          <span class="status-label">Contract mode</span>
+          <strong id="contract-mode">Draft</strong>
+        </div>
+        <div class="status-card">
+          <span class="status-label">Agent state</span>
+          <strong id="agent-state">Waiting for task</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel panel-left">
+          <div class="panel-header">
+            <h2>Task + Contract</h2>
+          </div>
+
+          <div class="card">
+            <label for="research-question">Research question</label>
+            <textarea id="research-question" rows="5">Prepare a short research brief comparing three recent sources about a new AI product feature. Prioritize official sources and major reporting, avoid rumor-driven blogs, and ask me before citing uncertain claims.</textarea>
+
+            <div class="grid-2">
+              <div>
+                <label for="output-format">Output format</label>
+                <select id="output-format">
+                  <option>One-page briefing</option>
+                  <option>Bullet summary</option>
+                  <option>Slide notes</option>
+                </select>
+              </div>
+              <div>
+                <label for="urgency">Urgency</label>
+                <select id="urgency">
+                  <option>Today</option>
+                  <option>This week</option>
+                  <option>Background reading</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="draft-contract">Draft Contract</button>
+          </div>
+
+          <div class="card">
+            <h3>Delegation Contract</h3>
+            <div class="contract-group">
+              <label><input id="source-official" type="checkbox" checked /> Official announcements</label>
+              <label><input id="source-major" type="checkbox" checked /> Major reporting</label>
+              <label><input id="source-blogs" type="checkbox" checked /> Research blogs</label>
+              <label><input id="ban-forums" type="checkbox" checked /> Ban anonymous forums</label>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="time-budget">Time budget</label>
+                <select id="time-budget">
+                  <option>15 minutes</option>
+                  <option>30 minutes</option>
+                  <option>45 minutes</option>
+                </select>
+              </div>
+              <div>
+                <label for="tool-scope">Allowed tools</label>
+                <select id="tool-scope">
+                  <option>Search + synthesis</option>
+                  <option>Search only</option>
+                  <option>Search + synthesis + notes</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="confidence-threshold">Confidence threshold</label>
+                <input id="confidence-threshold" type="range" min="40" max="90" value="70" />
+                <p class="microcopy"><span id="confidence-value">70</span>% required for autonomous synthesis</p>
+              </div>
+              <div>
+                <label for="escalation-threshold">Escalation threshold</label>
+                <input id="escalation-threshold" type="range" min="30" max="90" value="55" />
+                <p class="microcopy"><span id="escalation-value">55</span>% sensitivity to conflict or policy mismatch</p>
+              </div>
+            </div>
+
+            <button id="start-research" class="disabled" disabled>Start Research</button>
+          </div>
+        </aside>
+
+        <section class="panel panel-center">
+          <div class="panel-header">
+            <h2>Runtime Governance</h2>
+          </div>
+
+          <div class="card timeline-card">
+            <ol id="timeline" class="timeline"></ol>
+          </div>
+
+          <div class="card">
+            <h3>Runtime status</h3>
+            <div class="runtime-grid">
+              <div>
+                <span class="status-label">Budget use</span>
+                <strong id="budget-status">0 / 15 min</strong>
+              </div>
+              <div>
+                <span class="status-label">Contract compliance</span>
+                <strong id="compliance-status">No active run</strong>
+              </div>
+              <div>
+                <span class="status-label">Confidence</span>
+                <strong id="runtime-confidence">N/A</strong>
+              </div>
+              <div>
+                <span class="status-label">Escalations</span>
+                <strong id="escalation-count">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Sources consulted</h3>
+            <ul id="sources-list" class="source-list"></ul>
+          </div>
+        </section>
+
+        <aside class="panel panel-right">
+          <div class="panel-header">
+            <h2>Intervention + Repair</h2>
+          </div>
+
+          <div class="card">
+            <h3>Study Session</h3>
+            <div class="grid-2">
+              <div>
+                <label for="participant-id">Participant ID</label>
+                <input id="participant-id" type="text" placeholder="P01" />
+              </div>
+              <div>
+                <label for="condition-id">Condition</label>
+                <select id="condition-id">
+                  <option>Governance UI</option>
+                  <option>Black-box baseline</option>
+                  <option>Trace baseline</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div>
+                <label for="session-id">Session ID</label>
+                <input id="session-id" type="text" readonly />
+              </div>
+              <div>
+                <label for="researcher-notes">Researcher notes</label>
+                <input id="researcher-notes" type="text" placeholder="Optional observation tag" />
+              </div>
+            </div>
+            <div class="button-stack">
+              <button id="start-session">Start Study Session</button>
+              <button id="export-log" class="secondary disabled" disabled>Export Session Log</button>
+            </div>
+            <p class="microcopy" id="session-status">
+              Start a session before running the scenario so events can be logged.
+            </p>
+          </div>
+
+          <div class="card callout neutral" id="askback-panel">
+            <h3>Ask-back panel</h3>
+            <p id="askback-copy">
+              The agent will pause here when a contract-relevant event occurs.
+            </p>
+            <div class="button-stack">
+              <button id="approve-once" class="secondary disabled" disabled>Approve Once</button>
+              <button id="revise-contract" class="secondary disabled" disabled>Revise Contract</button>
+              <button id="deny-source" class="secondary disabled" disabled>Deny Source</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Revision summary</h3>
+            <ul id="revision-list" class="revision-list"></ul>
+            <button id="rerun-step" class="disabled" disabled>Rerun from safe checkpoint</button>
+          </div>
+
+          <div class="card">
+            <h3>Final summary</h3>
+            <div id="final-summary" class="final-summary empty">
+              Finish the scenario to generate a governance-aware result summary.
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Event Log Preview</h3>
+            <ul id="event-log-preview" class="event-log-preview"></ul>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
