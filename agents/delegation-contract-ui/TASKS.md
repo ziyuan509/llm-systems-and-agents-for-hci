@@ -2,9 +2,9 @@
 
 ## Immediate
 
-- turn the delegation contract into a simple UI wireflow
+- refine the wireflow into concrete screens
 - decide the exact 4-6 policy controls for the MVP
-- define one representative deep research scenario
+- turn the representative scenario into a storyboard or clickable prototype
 - define the baseline interaction for comparison
 
 ## Build

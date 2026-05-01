@@ -27,4 +27,12 @@ Build a minimal prototype that demonstrates:
 - runtime ask-back
 - post-hoc policy revision
 
-See `SPEC.md`, `TASKS.md`, and `DECISIONS.md`.
+## Core Artifacts
+
+- `SPEC.md`
+- `WIREFLOW.md`
+- `SCENARIO.md`
+- `TASKS.md`
+- `DECISIONS.md`
+
+See these files to move from concept framing to prototype implementation.
