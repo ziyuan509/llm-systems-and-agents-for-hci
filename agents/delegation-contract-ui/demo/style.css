@@ -358,8 +358,7 @@ button.disabled {
   z-index: 1;
 }
 
-.timeline li::before {
-  content: "";
+.timeline-index {
   position: absolute;
   left: 0;
   top: 0;
@@ -376,10 +375,9 @@ button.disabled {
   color: var(--text-main);
 }
 
-.timeline li:nth-child(1)::before { content: "1"; }
-.timeline li:nth-child(2)::before { content: "2"; }
-.timeline li:nth-child(3)::before { content: "3"; }
-.timeline li:nth-child(4)::before { content: "4"; }
+.timeline-copy {
+  min-width: 0;
+}
 
 .timeline strong {
   display: block;

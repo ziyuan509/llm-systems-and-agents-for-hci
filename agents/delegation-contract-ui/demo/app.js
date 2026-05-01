@@ -94,9 +94,15 @@ function addRevision(note) {
 
 function renderTimeline() {
   timeline.innerHTML = "";
-  state.timeline.forEach((item) => {
+  state.timeline.forEach((item, index) => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>${item.title}</strong><span>${item.note}</span>`;
+    li.innerHTML = `
+      <span class="timeline-index" aria-hidden="true">${index + 1}</span>
+      <div class="timeline-copy">
+        <strong>${item.title}</strong>
+        <span>${item.note}</span>
+      </div>
+    `;
     timeline.appendChild(li);
   });
 }
