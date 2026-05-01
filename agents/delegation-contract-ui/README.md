@@ -2,15 +2,12 @@
 
 Main HCI project in this repository.
 
-## Local Path
-
-- `/Users/runner/Desktop/llm-systems-and-agents-for-hci/agents/delegation-contract-ui`
-
 ## Project Summary
 
 This project explores a governance-oriented interface for deep research agents.
 
-Instead of editing prompts or inspecting raw traces, users govern the agent through a delegation contract that defines:
+Instead of editing prompts or inspecting raw traces, users govern the agent
+through a delegation contract that defines:
 
 - source constraints
 - budget or time limits
@@ -21,20 +18,26 @@ Instead of editing prompts or inspecting raw traces, users govern the agent thro
 
 ## Current Goal
 
-Build a minimal prototype that demonstrates:
+Prepare a study-ready prototype that demonstrates:
 
 - contract setup
 - runtime ask-back
 - post-hoc policy revision
+- comparison conditions for black-box and trace-oriented oversight
+- lightweight event logging for pilot sessions
+
+The local demo is implemented as static HTML/CSS/JS in `demo/`.
 
 ## Core Artifacts
 
-- `SPEC.md`
-- `WIREFLOW.md`
-- `SCENARIO.md`
-- `TASKS.md`
-- `DECISIONS.md`
-- `DEMO_BUILD_PLAN.md`
-- `demo/`
+| Artifact | Role |
+| --- | --- |
+| `SPEC.md` | System model and MVP behavior. |
+| `WIREFLOW.md` | Screen flow and interaction sequence. |
+| `SCENARIO.md` | Representative user task and escalation moment. |
+| `TASKS.md` | Working task list. |
+| `DECISIONS.md` | Design decisions and tradeoffs. |
+| `DEMO_BUILD_PLAN.md` | Scope for the first local prototype. |
+| `demo/` | Runnable clickable prototype and study instrumentation. |
 
 See these files to move from concept framing to prototype implementation.

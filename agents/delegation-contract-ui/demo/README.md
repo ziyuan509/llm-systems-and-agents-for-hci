@@ -13,6 +13,10 @@ It demonstrates:
 - repair and rerun
 - governance-aware final summary
 
+It is intentionally static: there is no backend, build step, or live research
+agent dependency. The prototype uses scripted state transitions so the study
+flow can be piloted before implementing heavier infrastructure.
+
 ## Run
 
 Open `index.html` in a browser.
@@ -36,3 +40,10 @@ Recommended study flow:
 2. Click `Start Study Session`.
 3. Run the scenario.
 4. Export the session log at the end.
+
+## Current Conditions
+
+- `Governance UI`: editable contract controls, ask-back, repair, and rerun.
+- `Black-box baseline`: hides policy controls and proceeds without repair.
+- `Trace baseline`: exposes execution-level conflict markers without making
+  policy repair the main interaction.

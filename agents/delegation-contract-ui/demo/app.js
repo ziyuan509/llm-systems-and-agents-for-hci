@@ -1,3 +1,4 @@
+// DOM references
 const timeline = document.querySelector("#timeline");
 const sourcesList = document.querySelector("#sources-list");
 const revisionList = document.querySelector("#revision-list");
@@ -47,6 +48,7 @@ const sessionIdInput = document.querySelector("#session-id");
 const researcherNotesInput = document.querySelector("#researcher-notes");
 const sessionStatus = document.querySelector("#session-status");
 
+// Static configuration
 const contractControls = [
   sourceOfficial,
   sourceMajor,
@@ -152,6 +154,7 @@ const scenario = {
   ],
 };
 
+// Runtime state
 const state = {
   stage: "task_setup",
   contractDrafted: false,
@@ -178,6 +181,22 @@ const state = {
   blockedSourceIds: [],
   sourceOutcome: "governance_repair",
 };
+
+// Shared helpers
+function clearElement(element) {
+  element.replaceChildren();
+}
+
+function createTextElement(tagName, text, className) {
+  const element = document.createElement(tagName);
+  element.textContent = text;
+
+  if (className) {
+    element.className = className;
+  }
+
+  return element;
+}
 
 function setButtonEnabled(button, enabled) {
   button.disabled = !enabled;
@@ -226,65 +245,75 @@ function addRuntimeLog(label, detail) {
   renderRuntimeLog();
 }
 
+// Render functions
 function renderTimeline() {
-  timeline.innerHTML = "";
+  clearElement(timeline);
   state.timeline.forEach((item, index) => {
     const li = document.createElement("li");
-    li.innerHTML = `
-      <span class="timeline-index" aria-hidden="true">${index + 1}</span>
-      <div class="timeline-copy">
-        <strong>${item.title}</strong>
-        <span>${item.note}</span>
-      </div>
-    `;
+    const indexMarker = createTextElement(
+      "span",
+      String(index + 1),
+      "timeline-index"
+    );
+    const copy = document.createElement("div");
+
+    indexMarker.setAttribute("aria-hidden", "true");
+    copy.className = "timeline-copy";
+    copy.append(
+      createTextElement("strong", item.title),
+      createTextElement("span", item.note)
+    );
+    li.append(indexMarker, copy);
     timeline.appendChild(li);
   });
 }
 
 function renderSources() {
-  sourcesList.innerHTML = "";
+  clearElement(sourcesList);
   if (!state.sources.length) {
-    const li = document.createElement("li");
-    li.textContent = "No sources consulted yet.";
-    sourcesList.appendChild(li);
+    sourcesList.appendChild(
+      createTextElement("li", "No sources consulted yet.")
+    );
     return;
   }
 
   state.sources.forEach((item) => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>${item.name}</strong>${item.trust}: ${item.note}`;
+    li.append(
+      createTextElement("strong", item.name),
+      document.createTextNode(`${item.trust}: ${item.note}`)
+    );
     sourcesList.appendChild(li);
   });
 }
 
 function renderRevisions() {
-  revisionList.innerHTML = "";
+  clearElement(revisionList);
   if (!state.revisions.length) {
-    const li = document.createElement("li");
-    li.textContent = "No contract revisions yet.";
-    revisionList.appendChild(li);
+    revisionList.appendChild(
+      createTextElement("li", "No contract revisions yet.")
+    );
     return;
   }
 
   state.revisions.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    revisionList.appendChild(li);
+    revisionList.appendChild(createTextElement("li", item));
   });
 }
 
 function renderRuntimeLog() {
-  runtimeLog.innerHTML = "";
+  clearElement(runtimeLog);
   if (!state.runtimeLog.length) {
-    const li = document.createElement("li");
-    li.textContent = "No runtime events yet.";
-    runtimeLog.appendChild(li);
+    runtimeLog.appendChild(createTextElement("li", "No runtime events yet."));
     return;
   }
 
   state.runtimeLog.slice(-10).forEach((entry) => {
     const li = document.createElement("li");
-    li.innerHTML = `<strong>${entry.label}</strong><span>${entry.detail}</span>`;
+    li.append(
+      createTextElement("strong", entry.label),
+      createTextElement("span", entry.detail)
+    );
     runtimeLog.appendChild(li);
   });
 }
@@ -302,17 +331,20 @@ function renderSummary() {
 }
 
 function renderEventLogPreview() {
-  eventLogPreview.innerHTML = "";
+  clearElement(eventLogPreview);
   if (!state.eventLog.length) {
-    const li = document.createElement("li");
-    li.textContent = "No events logged yet.";
-    eventLogPreview.appendChild(li);
+    eventLogPreview.appendChild(
+      createTextElement("li", "No events logged yet.")
+    );
     return;
   }
 
   state.eventLog.slice(-8).forEach((entry) => {
     const li = document.createElement("li");
-    li.innerHTML = `<code>${entry.timestamp}</code> ${entry.type}`;
+    li.append(
+      createTextElement("code", entry.timestamp),
+      document.createTextNode(` ${entry.type}`)
+    );
     eventLogPreview.appendChild(li);
   });
 }
@@ -626,7 +658,13 @@ function evaluateSource(source) {
   const contract = currentContractSnapshot();
   const outsidePolicy = source.type === "blog" && !contract.researchBlogs;
   const conflict = source.conflict;
-  const riskScore = outsidePolicy ? 84 : conflict ? 64 : 28;
+  let riskScore = 28;
+
+  if (outsidePolicy) {
+    riskScore = 84;
+  } else if (conflict) {
+    riskScore = 64;
+  }
 
   return {
     source,
@@ -984,31 +1022,32 @@ function completeRun(outcome) {
   state.pausedEvent = null;
   state.stage = "final_summary";
   state.summaryText = buildSummaryText(outcome);
-  state.currentConfidence =
-    outcome === "governance_repair"
-      ? 84
-      : outcome === "blackbox_hidden_conflict"
-        ? 71
-        : outcome === "trace_continued"
-          ? 74
-          : 78;
+  const finalConfidenceByOutcome = {
+    governance_repair: 84,
+    blackbox_hidden_conflict: 71,
+    trace_continued: 74,
+  };
+  const completionTitleByOutcome = {
+    blackbox_hidden_conflict: "Black-box output produced",
+    trace_continued: "Trace-informed output produced",
+    default: "Governance-aware output produced",
+  };
+
+  state.currentConfidence = finalConfidenceByOutcome[outcome] || 78;
 
   stageLabel.textContent = "Final Summary";
   agentState.textContent = "Run complete";
-  complianceStatus.textContent =
-    outcome === "governance_repair"
-      ? "Contract satisfied after repair"
-      : outcome === "blackbox_hidden_conflict"
-        ? "Outcome produced without repair"
-        : "Outcome ready for review";
+  if (outcome === "governance_repair") {
+    complianceStatus.textContent = "Contract satisfied after repair";
+  } else if (outcome === "blackbox_hidden_conflict") {
+    complianceStatus.textContent = "Outcome produced without repair";
+  } else {
+    complianceStatus.textContent = "Outcome ready for review";
+  }
   updateRuntimeStatus();
 
   addTimelineItem(
-    outcome === "blackbox_hidden_conflict"
-      ? "Black-box output produced"
-      : outcome === "trace_continued"
-        ? "Trace-informed output produced"
-        : "Governance-aware output produced",
+    completionTitleByOutcome[outcome] || completionTitleByOutcome.default,
     outcome === "governance_repair"
       ? "Final answer explains how the contract changed the result."
       : "Final answer reflects the interaction condition used during execution."
@@ -1084,6 +1123,7 @@ function exportSessionLog() {
   });
 }
 
+// Event wiring
 draftContractButton.addEventListener("click", draftContract);
 startResearchButton.addEventListener("click", startResearch);
 reviseContractButton.addEventListener("click", reviseContract);

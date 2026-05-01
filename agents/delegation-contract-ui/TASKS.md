@@ -1,27 +1,34 @@
 # Tasks
 
+## Completed
+
+- Refined the wireflow into concrete demo screens.
+- Selected the MVP policy controls for source trust, budget, tools, confidence, and escalation.
+- Turned the representative scenario into a clickable prototype.
+- Added black-box and trace baseline conditions.
+- Added lightweight study instrumentation and JSON export.
+
 ## Immediate
 
-- refine the wireflow into concrete screens
-- decide the exact 4-6 policy controls for the MVP
-- turn the representative scenario into a storyboard or clickable prototype
-- define the baseline interaction for comparison
+- Tighten the written baseline definitions so they match the implemented demo.
+- Run pilot walkthroughs and inspect exported session logs.
+- Capture screenshots or a short screen recording for the portfolio.
+- Add a manual QA checklist or minimal smoke test.
 
-## Build
+## Build Next
 
-- implement a minimal agent execution mock or loop
-- implement contract editing UI
-- implement at least one runtime escalation event
-- implement policy revision after interruption
+- Make the scenario script easier to edit without touching control-flow code.
+- Add clearer empty, error, and completed states for study runs.
+- Keep the prototype static unless a backend becomes necessary for the study.
 
 ## Research
 
-- collect 10-15 closest neighbor papers or systems
-- refine the claim against debugger-style interfaces
-- specify candidate study tasks and measures
+- Collect 10-15 closest neighbor papers or systems.
+- Refine the claim against debugger-style interfaces.
+- Specify candidate study tasks and measures.
 
 ## Demo Readiness
 
-- prepare one end-to-end scenario script
-- capture screenshots or screen recording
-- summarize design rationale and limitations
+- Prepare one end-to-end scenario script.
+- Capture screenshots or screen recording.
+- Summarize design rationale and limitations.
