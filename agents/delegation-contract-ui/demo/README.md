@@ -45,5 +45,5 @@ Recommended study flow:
 
 - `Governance UI`: editable contract controls, ask-back, repair, and rerun.
 - `Black-box baseline`: hides policy controls and proceeds without repair.
-- `Trace baseline`: exposes execution-level conflict markers without making
+- `Oversight baseline`: exposes execution-level conflict markers without making
   policy repair the main interaction.

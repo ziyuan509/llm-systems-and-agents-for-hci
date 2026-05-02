@@ -6,12 +6,16 @@ const finalSummary = document.querySelector("#final-summary");
 const askbackPanel = document.querySelector("#askback-panel");
 const askbackTitle = document.querySelector("#askback-title");
 const askbackCopy = document.querySelector("#askback-copy");
+const askbackRule = document.querySelector("#askback-rule");
+const askbackRisk = document.querySelector("#askback-risk");
+const askbackImpact = document.querySelector("#askback-impact");
 const eventLogPreview = document.querySelector("#event-log-preview");
 const runtimeLog = document.querySelector("#runtime-log");
 const runtimeLogTitle = document.querySelector("#runtime-log-title");
 const runtimeLogBadge = document.querySelector("#runtime-log-badge");
 const conditionCopy = document.querySelector("#condition-copy");
 const contractCard = document.querySelector("#contract-card");
+const contractPreview = document.querySelector("#contract-preview");
 
 const stageLabel = document.querySelector("#stage-label");
 const contractMode = document.querySelector("#contract-mode");
@@ -63,7 +67,7 @@ const contractControls = [
 const conditionModes = {
   governance: {
     badge: "Governance",
-    runtimeTitle: "Runtime trace",
+    runtimeTitle: "Governance log",
     contractEditable: true,
     stageLabel: "Runtime Governance",
     draftButton: "Draft Contract",
@@ -100,19 +104,19 @@ const conditionModes = {
     rerunLabel: "Rerun from safe checkpoint",
   },
   trace: {
-    badge: "Trace",
-    runtimeTitle: "Execution trace",
+    badge: "Oversight",
+    runtimeTitle: "Oversight log",
     contractEditable: false,
-    stageLabel: "Trace Oversight",
-    draftButton: "Load Trace Condition",
-    startButton: "Start Trace Run",
-    askbackTitle: "Trace inspector",
+    stageLabel: "Oversight Run",
+    draftButton: "Load Oversight Condition",
+    startButton: "Start Oversight Run",
+    askbackTitle: "Oversight checkpoint",
     askbackDefault:
       "This baseline reveals low-level execution steps instead of high-level contract repair controls.",
     conditionCopy:
-      "Trace baseline shows step-level agent actions and conflict markers, but it does not expose policy repair as the primary interaction.",
+      "Oversight baseline shows step-level conflict markers, but it does not make policy repair the primary interaction.",
     contractModeIdle: "Preset hidden",
-    contractModeActive: "Trace visible",
+    contractModeActive: "Oversight visible",
     approveLabel: "Continue Run",
     reviseLabel: "Revise Contract",
     denyLabel: "Deny Source",
@@ -173,7 +177,7 @@ const state = {
   sessionStartedAt: null,
   runtimeBudgetUsed: 0,
   currentConfidence: null,
-  summaryText: "",
+  summarySections: [],
   activeCondition: "governance",
   queuedSteps: [],
   pausedEvent: null,
@@ -198,6 +202,24 @@ function createTextElement(tagName, text, className) {
   return element;
 }
 
+function appendAuditSection(parent, title, content) {
+  const section = document.createElement("section");
+  section.className = "audit-section";
+  section.appendChild(createTextElement("h4", title));
+
+  if (Array.isArray(content)) {
+    const list = document.createElement("ul");
+    content.forEach((item) => {
+      list.appendChild(createTextElement("li", item));
+    });
+    section.appendChild(list);
+  } else {
+    section.appendChild(createTextElement("p", content));
+  }
+
+  parent.appendChild(section);
+}
+
 function setButtonEnabled(button, enabled) {
   button.disabled = !enabled;
   button.classList.toggle("disabled", !enabled);
@@ -215,7 +237,7 @@ function getConditionKey() {
   if (label === "Black-box baseline") {
     return "blackbox";
   }
-  if (label === "Trace baseline") {
+  if (label === "Trace baseline" || label === "Oversight baseline") {
     return "trace";
   }
   return "governance";
@@ -319,15 +341,23 @@ function renderRuntimeLog() {
 }
 
 function renderSummary() {
+  clearElement(finalSummary);
+
   if (!state.completed) {
-    finalSummary.textContent =
-      "Finish the scenario to generate a governance-aware result summary.";
+    finalSummary.appendChild(
+      createTextElement(
+        "p",
+        "Finish the scenario to generate a governance-aware result summary."
+      )
+    );
     finalSummary.classList.add("empty");
     return;
   }
 
   finalSummary.classList.remove("empty");
-  finalSummary.textContent = state.summaryText;
+  state.summarySections.forEach((section) => {
+    appendAuditSection(finalSummary, section.title, section.content);
+  });
 }
 
 function renderEventLogPreview() {
@@ -394,9 +424,36 @@ function currentContractSnapshot() {
   };
 }
 
+function buildContractPreview() {
+  const contract = currentContractSnapshot();
+  const allowedSources = [];
+
+  if (contract.officialSources) allowedSources.push("official announcements");
+  if (contract.majorReporting) allowedSources.push("major reporting");
+  if (contract.researchBlogs) allowedSources.push("research blogs");
+
+  const sourceText = allowedSources.length
+    ? allowedSources.join(", ")
+    : "no source categories until the user adds one";
+  const forumPolicy = contract.banForums
+    ? "Anonymous forums are outside the autonomy boundary."
+    : "Anonymous forums may be considered if other rules allow them.";
+
+  return (
+    `The agent may use ${sourceText} within a ${contract.timeBudget} budget. ` +
+    `${forumPolicy} It may use ${contract.toolScope.toLowerCase()} and should ask back when conflict or policy mismatch reaches ${contract.escalationThreshold}%. ` +
+    `It should only synthesize autonomously when confidence is at least ${contract.confidenceThreshold}%.`
+  );
+}
+
+function renderContractPreview() {
+  contractPreview.textContent = buildContractPreview();
+}
+
 function syncSliders() {
   confidenceValue.textContent = confidenceThreshold.value;
   escalationValue.textContent = escalationThreshold.value;
+  renderContractPreview();
 }
 
 function setContractControlsLocked(locked) {
@@ -428,6 +485,9 @@ function resetAskbackPanel() {
   askbackPanel.className = "card callout neutral";
   askbackTitle.textContent = config.askbackTitle;
   askbackCopy.textContent = config.askbackDefault;
+  askbackRule.textContent = "No boundary triggered yet";
+  askbackRisk.textContent = "No active risk";
+  askbackImpact.textContent = "No decision needed";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
@@ -448,7 +508,7 @@ function resetRunState() {
   state.runtimeLog = [];
   state.runtimeBudgetUsed = 0;
   state.currentConfidence = 68;
-  state.summaryText = "";
+  state.summarySections = [];
   state.queuedSteps = [];
   state.pausedEvent = null;
   state.blockedSourceIds = [];
@@ -465,6 +525,7 @@ function setDefaultControls() {
   confidenceThreshold.value = 70;
   escalationThreshold.value = 55;
   syncSliders();
+  renderContractPreview();
 }
 
 function initialize() {
@@ -786,10 +847,16 @@ function triggerGovernanceAskback(evaluation) {
   );
 
   askbackPanel.className = "card callout warning";
-  askbackTitle.textContent = "Ask-back panel";
+  askbackTitle.textContent = "Governance checkpoint";
   askbackCopy.textContent = evaluation.outsidePolicy
     ? "The agent found a conflicting source that is outside the current contract. Approve it once, revise the contract, or deny it for this run."
     : "The agent found a low-trust conflicting source. The contract allows you to approve the exception, revise the policy, or deny the source for this run.";
+  askbackRule.textContent = evaluation.outsidePolicy
+    ? "Source boundary: research blogs are no longer authorized for autonomous use."
+    : "Escalation boundary: conflicting evidence crossed the ask-back threshold.";
+  askbackRisk.textContent = `${evaluation.source.name} has risk score ${evaluation.riskScore} and conflicts with trusted evidence.`;
+  askbackImpact.textContent =
+    "Approve once keeps this run moving, revise changes future autonomy, and deny excludes the source only for this run.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, true);
   setButtonEnabled(denySourceButton, true);
@@ -808,25 +875,29 @@ function triggerTracePause(evaluation) {
   state.stage = "trace_pause";
   state.sourceOutcome = "trace_continued";
 
-  stageLabel.textContent = "Trace Inspection";
-  agentState.textContent = "Paused for trace review";
+  stageLabel.textContent = "Oversight Checkpoint";
+  agentState.textContent = "Paused for oversight review";
   complianceStatus.textContent = "Low-level conflict marker surfaced";
   escalationCount.textContent = String(state.escalationEvents);
   updateRuntimeStatus();
 
   addTimelineItem(
-    "Trace checkpoint reached",
-    "The baseline pauses at a low-level conflict marker rather than a contract repair prompt."
+    "Oversight checkpoint reached",
+    "The baseline pauses at a conflict marker rather than a contract repair prompt."
   );
   addRuntimeLog(
-    "Trace break",
-    "Extractor disagreement detected between official announcement and blog interpretation."
+    "Conflict marker",
+    "A disagreement was detected between official announcement and blog interpretation."
   );
 
   askbackPanel.className = "card callout neutral";
-  askbackTitle.textContent = "Trace inspector";
+  askbackTitle.textContent = "Oversight checkpoint";
   askbackCopy.textContent =
-    "Low-level trace: query -> fetch -> extract -> compare. The latest extraction disagrees with prior evidence. Continue the run to keep the conflicting source in the final synthesis.";
+    "The latest source disagrees with prior evidence. This baseline can continue the run, but it does not offer contract repair as the main decision.";
+  askbackRule.textContent = "No editable delegation boundary is available in this baseline.";
+  askbackRisk.textContent = `${evaluation.source.name} conflicts with earlier trusted evidence.`;
+  askbackImpact.textContent =
+    "Continuing keeps the conflicting source in the final synthesis without revising future autonomy.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
@@ -869,6 +940,10 @@ function reviseContract() {
   askbackTitle.textContent = "Repair recorded";
   askbackCopy.textContent =
     "Revision recorded. The system can rerun the synthesis step without the excluded source type.";
+  askbackRule.textContent = "Source boundary updated: research blogs are excluded.";
+  askbackRisk.textContent = "The disputed blog interpretation will not shape this synthesis.";
+  askbackImpact.textContent =
+    "The agent can continue from the checkpoint under the revised autonomy boundary.";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
@@ -943,75 +1018,191 @@ function handleSynthesisStep() {
   scheduleCompletion(state.sourceOutcome);
 }
 
-function buildSummaryText(outcome) {
+function buildSummarySections(outcome) {
   if (outcome === "governance_repair") {
-    return (
-      "Research brief complete.\n\n" +
-      "Result:\nThe final answer relies on the official announcement and major reporting. A conflicting blog interpretation was excluded after the participant revised the delegation contract.\n\n" +
-      "Governance impact:\n" +
-      "- 1 escalation triggered by conflicting evidence\n" +
-      "- Contract revised to remove research blogs\n" +
-      "- Synthesis rerun from the last safe checkpoint\n" +
-      "- Final answer is shorter but more reliable under the chosen policy"
-    );
+    return [
+      {
+        title: "Result",
+        content:
+          "The final answer relies on the official announcement and major reporting.",
+      },
+      {
+        title: "Sources",
+        content: [
+          "Used: official product announcement",
+          "Used: major reporting summary",
+          "Excluded: conflicting research blog after policy revision",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["1 ask-back triggered by conflicting evidence."],
+      },
+      {
+        title: "Contract revisions",
+        content: [
+          "Research blogs were removed from allowed sources.",
+          "Synthesis reran from the last safe checkpoint.",
+        ],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "The excluded interpretation may be worth later review, but it is outside this run's revised autonomy boundary.",
+      },
+    ];
   }
 
   if (outcome === "approved_exception") {
-    return (
-      "Research brief complete.\n\n" +
-      "Result:\nThe final answer cites official and major sources, but also carries a one-time exception for the conflicting blog interpretation.\n\n" +
-      "Governance impact:\n" +
-      "- 1 escalation triggered by conflicting evidence\n" +
-      "- Participant approved a one-time exception\n" +
-      "- No contract revision was recorded\n" +
-      "- Final answer is broader but less tightly governed"
-    );
+    return [
+      {
+        title: "Result",
+        content:
+          "The final answer cites official and major sources plus a one-time exception for the conflicting blog.",
+      },
+      {
+        title: "Sources",
+        content: [
+          "Used: official product announcement",
+          "Used: major reporting summary",
+          "Exception: conflicting research blog",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["1 ask-back triggered by conflicting evidence."],
+      },
+      {
+        title: "Contract revisions",
+        content: ["No durable policy change was recorded."],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "The exception broadens coverage but leaves future autonomy unchanged.",
+      },
+    ];
   }
 
   if (outcome === "denied_for_run") {
-    return (
-      "Research brief complete.\n\n" +
-      "Result:\nThe final answer excludes the conflicting blog for this run, but the broader contract was not changed for future runs.\n\n" +
-      "Governance impact:\n" +
-      "- 1 escalation triggered by conflicting evidence\n" +
-      "- Source denied for this run only\n" +
-      "- No policy repair was stored\n" +
-      "- Future runs could hit the same issue again"
-    );
+    return [
+      {
+        title: "Result",
+        content:
+          "The final answer excludes the conflicting blog for this run only.",
+      },
+      {
+        title: "Sources",
+        content: [
+          "Used: official product announcement",
+          "Used: major reporting summary",
+          "Denied for this run: conflicting research blog",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["1 ask-back triggered by conflicting evidence."],
+      },
+      {
+        title: "Contract revisions",
+        content: ["No reusable policy repair was saved."],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "Future runs could hit the same boundary because the contract itself did not change.",
+      },
+    ];
   }
 
   if (outcome === "trace_continued") {
-    return (
-      "Research brief complete.\n\n" +
-      "Result:\nThe final answer includes the conflicting interpretation after the participant inspected the execution trace and continued the run.\n\n" +
-      "Trace condition impact:\n" +
-      "- 1 trace checkpoint exposed low-level extraction disagreement\n" +
-      "- Participant continued the run without changing policy\n" +
-      "- Oversight happened at the execution-step level\n" +
-      "- The interface explains what the agent did more than what policy changed"
-    );
+    return [
+      {
+        title: "Result",
+        content:
+          "The final answer includes the conflicting interpretation after the participant continued from an oversight checkpoint.",
+      },
+      {
+        title: "Sources",
+        content: [
+          "Used: official product announcement",
+          "Used: major reporting summary",
+          "Included: conflicting research blog",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["1 oversight checkpoint surfaced a source conflict."],
+      },
+      {
+        title: "Contract revisions",
+        content: ["No policy boundary was editable in this condition."],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "The interface shows the conflict, but it does not turn the decision into a reusable delegation policy.",
+      },
+    ];
   }
 
   if (outcome === "blackbox_hidden_conflict") {
-    return (
-      "Research brief complete.\n\n" +
-      "Result:\nThe final answer blends official reporting with a conflicting secondary interpretation. The participant never received a repair opportunity during the run.\n\n" +
-      "Black-box baseline impact:\n" +
-      "- No intervention point was offered during execution\n" +
-      "- Policy assumptions remained hidden\n" +
-      "- Conflicting evidence stayed in the synthesis path\n" +
-      "- Trust decisions are harder to attribute or audit afterward"
-    );
+    return [
+      {
+        title: "Result",
+        content:
+          "The final answer blends official reporting with a conflicting secondary interpretation.",
+      },
+      {
+        title: "Sources",
+        content: [
+          "Used: official product announcement",
+          "Used: major reporting summary",
+          "Included without repair: conflicting research blog",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["No intervention point was offered during execution."],
+      },
+      {
+        title: "Contract revisions",
+        content: ["Policy assumptions remained hidden."],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "Trust decisions are harder to attribute because the user never saw or repaired the autonomy boundary.",
+      },
+    ];
   }
 
-  return (
-    "Research brief complete.\n\n" +
-    "Result:\nThe final answer stayed within the original policy and no escalation was triggered.\n\n" +
-    "Run impact:\n" +
-    "- The configured threshold tolerated the observed conflict\n" +
-    "- No repair action was required\n" +
-    "- The result reflects the initial delegation contract"
-  );
+  return [
+    {
+      title: "Result",
+      content: "The final answer stayed within the original policy.",
+    },
+    {
+      title: "Sources",
+      content: [
+        "Used: official product announcement",
+        "Used: major reporting summary",
+      ],
+    },
+    {
+      title: "Escalations",
+      content: ["No ask-back was required under the configured threshold."],
+    },
+    {
+      title: "Contract revisions",
+      content: ["The original delegation contract remained active."],
+    },
+    {
+      title: "Remaining uncertainty",
+      content:
+        "The run reflects the user's initial boundary settings and threshold tolerance.",
+    },
+  ];
 }
 
 function completeRun(outcome) {
@@ -1021,7 +1212,7 @@ function completeRun(outcome) {
   state.escalationActive = false;
   state.pausedEvent = null;
   state.stage = "final_summary";
-  state.summaryText = buildSummaryText(outcome);
+  state.summarySections = buildSummarySections(outcome);
   const finalConfidenceByOutcome = {
     governance_repair: 84,
     blackbox_hidden_conflict: 71,
@@ -1223,6 +1414,7 @@ document.querySelectorAll("input[type='checkbox'], select").forEach((element) =>
   }
 
   element.addEventListener("change", () => {
+    renderContractPreview();
     logEvent("contract_control_changed", {
       control: element.id,
       value: element.type === "checkbox" ? element.checked : element.value,

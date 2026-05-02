@@ -100,13 +100,20 @@
               <div>
                 <label for="confidence-threshold">Confidence threshold</label>
                 <input id="confidence-threshold" type="range" min="40" max="90" value="70" />
-                <p class="microcopy"><span id="confidence-value">70</span>% required for autonomous synthesis</p>
+                <p class="microcopy"><span id="confidence-value">70</span>% required before autonomous synthesis</p>
               </div>
               <div>
                 <label for="escalation-threshold">Escalation threshold</label>
                 <input id="escalation-threshold" type="range" min="30" max="90" value="55" />
                 <p class="microcopy"><span id="escalation-value">55</span>% sensitivity to conflict or policy mismatch</p>
               </div>
+            </div>
+
+            <div class="contract-preview" aria-live="polite">
+              <span class="status-label">Plain-language contract</span>
+              <p id="contract-preview">
+                Draft a contract to see the agent's autonomy boundary in plain language.
+              </p>
             </div>
 
             <button id="start-research" class="disabled" disabled>Start Research</button>
@@ -151,7 +158,7 @@
 
           <div class="card">
             <div class="card-header-inline">
-              <h3 id="runtime-log-title">Runtime trace</h3>
+              <h3 id="runtime-log-title">Governance log</h3>
               <span id="runtime-log-badge" class="mini-badge">Governance</span>
             </div>
             <ul id="runtime-log" class="runtime-log"></ul>
@@ -175,7 +182,7 @@
                 <select id="condition-id">
                   <option>Governance UI</option>
                   <option>Black-box baseline</option>
-                  <option>Trace baseline</option>
+                  <option>Oversight baseline</option>
                 </select>
               </div>
             </div>
@@ -210,6 +217,20 @@
             <p id="askback-copy">
               The agent will pause here when a contract-relevant event occurs.
             </p>
+            <div class="askback-details">
+              <div>
+                <span class="status-label">Triggered rule</span>
+                <strong id="askback-rule">No boundary triggered yet</strong>
+              </div>
+              <div>
+                <span class="status-label">Risk</span>
+                <strong id="askback-risk">No active risk</strong>
+              </div>
+              <div>
+                <span class="status-label">Decision impact</span>
+                <strong id="askback-impact">No decision needed</strong>
+              </div>
+            </div>
             <div class="button-stack">
               <button id="approve-once" class="secondary disabled" disabled>Approve Once</button>
               <button id="revise-contract" class="secondary disabled" disabled>Revise Contract</button>
@@ -224,7 +245,7 @@
           </div>
 
           <div class="card">
-            <h3>Final summary</h3>
+            <h3>Governance audit summary</h3>
             <div id="final-summary" class="final-summary empty">
               Finish the scenario to generate a governance-aware result summary.
             </div>
