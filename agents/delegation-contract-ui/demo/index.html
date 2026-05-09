@@ -71,10 +71,11 @@
           <div class="card" id="contract-card">
             <h3>Delegation Contract</h3>
             <div class="contract-group">
-              <label><input id="source-official" type="checkbox" checked /> Summarize my spoken notes</label>
-              <label><input id="source-major" type="checkbox" checked /> Remember my action items only</label>
-              <label><input id="source-blogs" type="checkbox" checked /> Ask before processing bystander voices</label>
-              <label><input id="ban-forums" type="checkbox" checked /> Require approval before external sharing</label>
+              <label><input id="summarizeNotes" type="checkbox" checked /> Summarize my spoken notes</label>
+              <label><input id="rememberTaskPreferences" type="checkbox" checked /> Remember my task preferences</label>
+              <label><input id="askBeforePersonalMemory" type="checkbox" checked /> Ask before storing personal details</label>
+              <label><input id="bystanderApprovalRequired" type="checkbox" checked /> Do not store bystander voices without approval</label>
+              <label><input id="externalSharingApproval" type="checkbox" checked /> Require approval before external sharing</label>
             </div>
 
             <div class="grid-2">
@@ -116,7 +117,7 @@
               </p>
             </div>
 
-            <button id="start-research" class="disabled" disabled>Start Ambient Run</button>
+            <button id="start-run" class="disabled" disabled>Start Ambient Run</button>
           </div>
         </aside>
 
@@ -153,7 +154,7 @@
 
           <div class="card">
             <h3>Context handled</h3>
-            <ul id="sources-list" class="source-list"></ul>
+            <ul id="context-list" class="context-list"></ul>
           </div>
 
           <div class="card">
@@ -232,9 +233,9 @@
               </div>
             </div>
             <div class="button-stack">
-              <button id="approve-once" class="secondary disabled" disabled>Approve Once</button>
+              <button id="approve-once" class="secondary disabled" disabled>Include Anonymized Once</button>
               <button id="revise-contract" class="secondary disabled" disabled>Revise Contract</button>
-              <button id="deny-source" class="secondary disabled" disabled>Exclude Content</button>
+              <button id="exclude-content" class="secondary disabled" disabled>Exclude Content</button>
             </div>
           </div>
 

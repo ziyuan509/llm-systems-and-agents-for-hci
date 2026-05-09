@@ -1,6 +1,6 @@
 // DOM references
 const timeline = document.querySelector("#timeline");
-const sourcesList = document.querySelector("#sources-list");
+const contextList = document.querySelector("#context-list");
 const revisionList = document.querySelector("#revision-list");
 const finalSummary = document.querySelector("#final-summary");
 const askbackPanel = document.querySelector("#askback-panel");
@@ -25,10 +25,11 @@ const complianceStatus = document.querySelector("#compliance-status");
 const runtimeConfidence = document.querySelector("#runtime-confidence");
 const escalationCount = document.querySelector("#escalation-count");
 
-const sourceOfficial = document.querySelector("#source-official");
-const sourceMajor = document.querySelector("#source-major");
-const sourceBlogs = document.querySelector("#source-blogs");
-const banForums = document.querySelector("#ban-forums");
+const summarizeNotes = document.querySelector("#summarizeNotes");
+const rememberTaskPreferences = document.querySelector("#rememberTaskPreferences");
+const askBeforePersonalMemory = document.querySelector("#askBeforePersonalMemory");
+const bystanderApprovalRequired = document.querySelector("#bystanderApprovalRequired");
+const externalSharingApproval = document.querySelector("#externalSharingApproval");
 const timeBudgetSelect = document.querySelector("#time-budget");
 const toolScopeSelect = document.querySelector("#tool-scope");
 const confidenceThreshold = document.querySelector("#confidence-threshold");
@@ -37,10 +38,10 @@ const confidenceValue = document.querySelector("#confidence-value");
 const escalationValue = document.querySelector("#escalation-value");
 
 const draftContractButton = document.querySelector("#draft-contract");
-const startResearchButton = document.querySelector("#start-research");
+const startRunButton = document.querySelector("#start-run");
 const approveOnceButton = document.querySelector("#approve-once");
 const reviseContractButton = document.querySelector("#revise-contract");
-const denySourceButton = document.querySelector("#deny-source");
+const excludeContentButton = document.querySelector("#exclude-content");
 const rerunStepButton = document.querySelector("#rerun-step");
 const resetDemoButton = document.querySelector("#reset-demo");
 const startSessionButton = document.querySelector("#start-session");
@@ -54,10 +55,11 @@ const sessionStatus = document.querySelector("#session-status");
 
 // Static configuration
 const contractControls = [
-  sourceOfficial,
-  sourceMajor,
-  sourceBlogs,
-  banForums,
+  summarizeNotes,
+  rememberTaskPreferences,
+  askBeforePersonalMemory,
+  bystanderApprovalRequired,
+  externalSharingApproval,
   timeBudgetSelect,
   toolScopeSelect,
   confidenceThreshold,
@@ -79,8 +81,8 @@ const conditionModes = {
       "Contract UI exposes controls, ask-back, and durable repair across sensing, memory, actions, disclosure, and escalation.",
     contractModeIdle: "Draft",
     contractModeActive: "Active",
-    approveLabel: "Include Anonymized",
-    reviseLabel: "Edit Contract",
+    approveLabel: "Include Anonymized Once",
+    reviseLabel: "Revise Contract",
     denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
@@ -98,12 +100,12 @@ const conditionModes = {
       "Black-box baseline offers no visible controls, no ask-back, and no durable repair; participants only see progress and the final output.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Preset hidden",
-    approveLabel: "Include Anonymized",
-    reviseLabel: "Edit Contract",
+    approveLabel: "Include Anonymized Once",
+    reviseLabel: "Revise Contract",
     denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
-  trace: {
+  oversight: {
     badge: "Oversight",
     runtimeTitle: "Oversight log",
     contractEditable: false,
@@ -118,7 +120,7 @@ const conditionModes = {
     contractModeIdle: "Preset hidden",
     contractModeActive: "Oversight visible",
     approveLabel: "Continue Run",
-    reviseLabel: "Edit Contract",
+    reviseLabel: "Revise Contract",
     denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
@@ -127,7 +129,7 @@ const conditionModes = {
 const scenario = {
   taskNote:
     "User delegates a shared studio meeting to an ambient assistant with bystander privacy constraints.",
-  sources: [
+  contexts: [
     {
       id: "notes",
       type: "notes",
@@ -168,7 +170,7 @@ const state = {
   completed: false,
   escalationEvents: 0,
   timeline: [],
-  sources: [],
+  contexts: [],
   revisions: [],
   eventLog: [],
   runtimeLog: [],
@@ -182,8 +184,8 @@ const state = {
   queuedSteps: [],
   pausedEvent: null,
   timerId: null,
-  blockedSourceIds: [],
-  sourceOutcome: "governance_repair",
+  blockedContextIds: [],
+  runOutcome: "governance_repair",
 };
 
 // Shared helpers
@@ -238,7 +240,7 @@ function getConditionKey() {
     return "blackbox";
   }
   if (label === "Oversight baseline") {
-    return "trace";
+    return "oversight";
   }
   return "governance";
 }
@@ -252,9 +254,9 @@ function addTimelineItem(title, note) {
   renderTimeline();
 }
 
-function addSource(source) {
-  state.sources.push(source);
-  renderSources();
+function addContextRecord(context) {
+  state.contexts.push(context);
+  renderContextRecords();
 }
 
 function addRevision(note) {
@@ -290,22 +292,22 @@ function renderTimeline() {
   });
 }
 
-function renderSources() {
-  clearElement(sourcesList);
-  if (!state.sources.length) {
-    sourcesList.appendChild(
+function renderContextRecords() {
+  clearElement(contextList);
+  if (!state.contexts.length) {
+    contextList.appendChild(
       createTextElement("li", "No ambient context handled yet.")
     );
     return;
   }
 
-  state.sources.forEach((item) => {
+  state.contexts.forEach((item) => {
     const li = document.createElement("li");
     li.append(
       createTextElement("strong", item.name),
       document.createTextNode(`${item.trust}: ${item.note}`)
     );
-    sourcesList.appendChild(li);
+    contextList.appendChild(li);
   });
 }
 
@@ -413,39 +415,51 @@ function logEvent(type, payload = {}) {
 
 function currentContractSnapshot() {
   return {
-    summarizeUserNotes: sourceOfficial.checked,
-    rememberActionItemsOnly: sourceMajor.checked,
-    requireBystanderAskBack: sourceBlogs.checked,
-    requireDisclosureApproval: banForums.checked,
+    summarizeNotes: summarizeNotes.checked,
+    rememberTaskPreferences: rememberTaskPreferences.checked,
+    askBeforePersonalMemory: askBeforePersonalMemory.checked,
+    bystanderApprovalRequired: bystanderApprovalRequired.checked,
+    externalSharingApproval: externalSharingApproval.checked,
     reviewWindow: timeBudgetSelect.value,
     allowedActions: toolScopeSelect.value,
-    confidenceThreshold: Number(confidenceThreshold.value),
-    escalationThreshold: Number(escalationThreshold.value),
+    autonomyConfidence: Number(confidenceThreshold.value),
+    privacyEscalation: Number(escalationThreshold.value),
   };
 }
 
 function buildContractPreview() {
   const contract = currentContractSnapshot();
-  const allowedBehaviors = [];
+  const lines = [];
 
-  if (contract.summarizeUserNotes) allowedBehaviors.push("summarize the user's notes");
-  if (contract.rememberActionItemsOnly) allowedBehaviors.push("remember the user's action items only");
+  if (contract.summarizeNotes) {
+    lines.push("The assistant may summarize my spoken notes.");
+  } else {
+    lines.push("The assistant should not summarize spoken notes automatically.");
+  }
 
-  const behaviorText = allowedBehaviors.length
-    ? allowedBehaviors.join(", ")
-    : "no sensing or memory actions until the user adds one";
-  const bystanderPolicy = contract.requireBystanderAskBack
-    ? "Bystander voices require ask-back before processing or storage."
-    : "Bystander voices may be processed without a dedicated ask-back rule.";
-  const disclosurePolicy = contract.requireDisclosureApproval
-    ? "External sharing requires user approval."
-    : "The assistant may share outputs when other rules allow it.";
+  if (contract.rememberTaskPreferences) {
+    lines.push("It may remember my task preferences within the current project context.");
+  } else {
+    lines.push("It should not remember task preferences after this session.");
+  }
 
-  return (
-    `The assistant may ${behaviorText} within a ${contract.reviewWindow} review window. ` +
-    `${bystanderPolicy} ${disclosurePolicy} It may ${contract.allowedActions.toLowerCase()} and should ask back when bystander or disclosure risk reaches ${contract.escalationThreshold}%. ` +
-    `It should only act autonomously when confidence is at least ${contract.confidenceThreshold}%.`
+  if (contract.askBeforePersonalMemory) {
+    lines.push("It must ask before storing personal details.");
+  }
+
+  if (contract.bystanderApprovalRequired) {
+    lines.push("It must not store or use bystander voices without explicit approval.");
+  }
+
+  if (contract.externalSharingApproval) {
+    lines.push("It must ask before sharing content externally.");
+  }
+
+  lines.push(
+    "If the situation involves bystander data, ambiguous consent, or external disclosure, the assistant should pause and ask back instead of acting autonomously."
   );
+
+  return lines.join(" ");
 }
 
 function renderContractPreview() {
@@ -473,10 +487,10 @@ function applyConditionUI() {
   runtimeLogBadge.textContent = config.badge;
   conditionCopy.textContent = config.conditionCopy;
   draftContractButton.textContent = config.draftButton;
-  startResearchButton.textContent = config.startButton;
+  startRunButton.textContent = config.startButton;
   approveOnceButton.textContent = config.approveLabel;
   reviseContractButton.textContent = config.reviseLabel;
-  denySourceButton.textContent = config.denyLabel;
+  excludeContentButton.textContent = config.denyLabel;
   rerunStepButton.textContent = config.rerunLabel;
   contractMode.textContent = config.contractModeIdle;
   setContractControlsLocked(!config.contractEditable);
@@ -492,7 +506,7 @@ function resetAskbackPanel() {
   askbackImpact.textContent = "No decision needed";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
+  setButtonEnabled(excludeContentButton, false);
 }
 
 function resetRunState() {
@@ -505,7 +519,7 @@ function resetRunState() {
   state.completed = false;
   state.escalationEvents = 0;
   state.timeline = [];
-  state.sources = [];
+  state.contexts = [];
   state.revisions = [];
   state.runtimeLog = [];
   state.runtimeBudgetUsed = 0;
@@ -513,15 +527,16 @@ function resetRunState() {
   state.summarySections = [];
   state.queuedSteps = [];
   state.pausedEvent = null;
-  state.blockedSourceIds = [];
-  state.sourceOutcome = "governance_repair";
+  state.blockedContextIds = [];
+  state.runOutcome = "governance_repair";
 }
 
 function setDefaultControls() {
-  sourceOfficial.checked = true;
-  sourceMajor.checked = true;
-  sourceBlogs.checked = true;
-  banForums.checked = true;
+  summarizeNotes.checked = true;
+  rememberTaskPreferences.checked = true;
+  askBeforePersonalMemory.checked = true;
+  bystanderApprovalRequired.checked = true;
+  externalSharingApproval.checked = true;
   timeBudgetSelect.value = "15 minutes";
   toolScopeSelect.value = "Summarize + draft follow-up";
   confidenceThreshold.value = 70;
@@ -547,13 +562,13 @@ function initialize() {
     : "Start a session before running the scenario so events can be logged.";
 
   addTimelineItem("Task received", scenario.taskNote);
-  renderSources();
+  renderContextRecords();
   renderRevisions();
   renderRuntimeLog();
   renderSummary();
   renderEventLogPreview();
   resetAskbackPanel();
-  setButtonEnabled(startResearchButton, false);
+  setButtonEnabled(startRunButton, false);
   setButtonEnabled(rerunStepButton, false);
   setButtonEnabled(exportLogButton, state.sessionActive);
 }
@@ -585,7 +600,7 @@ function draftContract() {
       : "This condition fixes the policy before execution."
   );
 
-  setButtonEnabled(startResearchButton, true);
+  setButtonEnabled(startRunButton, true);
   logEvent("contract_drafted", {
     contract: currentContractSnapshot(),
     condition: state.activeCondition,
@@ -601,32 +616,32 @@ function buildRunQueue() {
     },
   ];
 
-  if (contract.summarizeUserNotes) {
-    steps.push({ type: "collect", source: scenario.sources[0] });
+  if (contract.summarizeNotes) {
+    steps.push({ type: "collect", context: scenario.contexts[0] });
   } else {
     steps.push({
       type: "skip",
-      source: scenario.sources[0],
+      context: scenario.contexts[0],
       reason: "Summarizing the user's spoken notes is disabled in the current contract.",
     });
   }
 
-  if (contract.rememberActionItemsOnly) {
-    steps.push({ type: "collect", source: scenario.sources[1] });
+  if (contract.rememberTaskPreferences) {
+    steps.push({ type: "collect", context: scenario.contexts[1] });
   } else {
     steps.push({
       type: "skip",
-      source: scenario.sources[1],
+      context: scenario.contexts[1],
       reason: "Longer-term memory updates are disabled in the current contract.",
     });
   }
 
-  steps.push({ type: "collect", source: scenario.sources[2] });
+  steps.push({ type: "collect", context: scenario.contexts[2] });
   steps.push({ type: "synthesize" });
   return steps;
 }
 
-function startResearch() {
+function startAmbientRun() {
   if (!state.contractDrafted || state.runStarted) {
     return;
   }
@@ -678,7 +693,7 @@ function runNextStep() {
 
   const step = state.queuedSteps.shift();
   if (!step) {
-    completeRun(state.sourceOutcome);
+    completeRun(state.runOutcome);
     return;
   }
 
@@ -689,13 +704,13 @@ function runNextStep() {
   }
 
   if (step.type === "skip") {
-    addRuntimeLog("Skip", `${step.source.name} skipped. ${step.reason}`);
+    addRuntimeLog("Skip", `${step.context.name} skipped. ${step.reason}`);
     scheduleNextStep();
     return;
   }
 
   if (step.type === "collect") {
-    handleSourceStep(step.source);
+    handleContextStep(step.context);
     return;
   }
 
@@ -704,9 +719,9 @@ function runNextStep() {
   }
 }
 
-function makeSourceRecord(source, trust, note) {
+function makeContextRecord(context, trust, note) {
   return {
-    name: source.name,
+    name: context.name,
     trust,
     note,
   };
@@ -717,11 +732,11 @@ function updateRuntimeStatus() {
   runtimeConfidence.textContent = `${state.currentConfidence}%`;
 }
 
-function evaluateSource(source) {
+function evaluateContext(context) {
   const contract = currentContractSnapshot();
   const outsidePolicy =
-    source.type === "bystander" && contract.requireBystanderAskBack;
-  const conflict = source.conflict;
+    context.type === "bystander" && contract.bystanderApprovalRequired;
+  const conflict = context.conflict;
   let riskScore = 28;
 
   if (outsidePolicy) {
@@ -731,47 +746,47 @@ function evaluateSource(source) {
   }
 
   return {
-    source,
+    context,
     outsidePolicy,
     conflict,
     riskScore,
     shouldEscalate:
       state.activeCondition === "governance" &&
-      riskScore >= contract.escalationThreshold,
-    shouldPauseTrace: state.activeCondition === "trace" && conflict,
+      riskScore >= contract.privacyEscalation,
+    shouldPauseOversight: state.activeCondition === "oversight" && conflict,
   };
 }
 
-function handleSourceStep(source) {
-  const evaluation = evaluateSource(source);
-  state.runtimeBudgetUsed += source.budget;
+function handleContextStep(context) {
+  const evaluation = evaluateContext(context);
+  state.runtimeBudgetUsed += context.budget;
   state.currentConfidence = clampConfidence(
-    state.currentConfidence + source.confidenceDelta
+    state.currentConfidence + context.confidenceDelta
   );
 
-  addRuntimeLog("Context check", `Handled ${source.name}. ${source.note}`);
+  addRuntimeLog("Context check", `Handled ${context.name}. ${context.note}`);
 
   if (!evaluation.outsidePolicy) {
-    addSource(
-      makeSourceRecord(
-        source,
-        source.conflict ? "Sensitive / boundary risk" : "Allowed context",
+    addContextRecord(
+      makeContextRecord(
+        context,
+        context.conflict ? "Sensitive / boundary risk" : "Allowed context",
         evaluation.conflict
           ? "Includes bystander information and lowers autonomy confidence."
-          : source.note
+          : context.note
       )
     );
   } else {
-    addSource(
-      makeSourceRecord(
-        source,
+    addContextRecord(
+      makeContextRecord(
+        context,
         "Ask-back required",
-        "Detected during the ambient run, and the contract requires user confirmation before processing or storage."
+        "Detected during the ambient run, and the contract requires user confirmation before storage or disclosure."
       )
     );
   }
 
-  if (source.id === "memory") {
+  if (context.id === "memory") {
     addTimelineItem(
       "User context prepared",
       "The assistant can summarize the meeting and remember the user's own action items."
@@ -783,13 +798,13 @@ function handleSourceStep(source) {
     return;
   }
 
-  if (evaluation.shouldPauseTrace) {
-    triggerTracePause(evaluation);
+  if (evaluation.shouldPauseOversight) {
+    triggerOversightPause(evaluation);
     return;
   }
 
   if (evaluation.conflict && state.activeCondition === "blackbox") {
-    state.sourceOutcome = "blackbox_hidden_conflict";
+    state.runOutcome = "blackbox_hidden_conflict";
     complianceStatus.textContent = "Bystander risk absorbed into baseline run";
     addTimelineItem(
       "Bystander content absorbed",
@@ -803,7 +818,7 @@ function handleSourceStep(source) {
     complianceStatus.textContent = evaluation.outsidePolicy
       ? "Bystander content requires user confirmation"
       : "Privacy risk noted below escalation threshold";
-    state.sourceOutcome = evaluation.outsidePolicy
+    state.runOutcome = evaluation.outsidePolicy
       ? "denied_for_run"
       : "governance_no_pause";
   } else {
@@ -814,8 +829,8 @@ function handleSourceStep(source) {
   }
 
   updateRuntimeStatus();
-  logEvent("context_processed", {
-    context: source.name,
+  logEvent("context_handled", {
+    context: context.name,
     conflict: evaluation.conflict,
     outsidePolicy: evaluation.outsidePolicy,
     riskScore: evaluation.riskScore,
@@ -828,7 +843,7 @@ function triggerGovernanceAskback(evaluation) {
   state.escalationActive = true;
   state.escalationEvents += 1;
   state.stage = "askback";
-  state.sourceOutcome = "governance_repair";
+  state.runOutcome = "governance_repair";
 
   stageLabel.textContent = "Ask-Back";
   agentState.textContent = "Paused for policy decision";
@@ -846,37 +861,42 @@ function triggerGovernanceAskback(evaluation) {
   );
   addRuntimeLog(
     "Escalation",
-    `Paused at privacy risk score ${evaluation.riskScore} for ${evaluation.source.name}.`
+    `Paused at privacy risk score ${evaluation.riskScore} for ${evaluation.context.name}.`
   );
 
   askbackPanel.className = "card callout warning";
   askbackTitle.textContent = "Governance checkpoint";
   askbackCopy.textContent = evaluation.outsidePolicy
-    ? "The assistant detected another person's voice while preparing the meeting summary. Exclude it, include an anonymized mention, or revise the contract for future runs."
-    : "The assistant found privacy-sensitive context. The contract allows you to include an anonymized mention, edit the policy, or exclude it for this run.";
+    ? "The assistant detected content that may include a bystander comment. The current contract requires approval before storing or disclosing bystander information."
+    : "The assistant found privacy-sensitive context. The current contract requires ask-back before storing personal details or disclosing content externally.";
   askbackRule.textContent = evaluation.outsidePolicy
-    ? "Sensing boundary: bystander voices are not authorized for autonomous processing."
-    : "Escalation boundary: privacy-sensitive context crossed the ask-back threshold.";
-  askbackRisk.textContent = `${evaluation.source.name} has risk score ${evaluation.riskScore} because it may store or disclose another person's comment.`;
+    ? "Bystander data requires approval."
+    : "Personal details require approval before storage or disclosure.";
+  askbackRisk.textContent =
+    "The detected comment may belong to another person in the shared space.";
   askbackImpact.textContent =
-    "Include anonymized keeps this run moving, edit contract changes future autonomy, and exclude content blocks it only for this run.";
+    "Approving will include this content once. Excluding will remove it from the summary. Revising the contract will apply this rule to future similar cases.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, true);
-  setButtonEnabled(denySourceButton, true);
+  setButtonEnabled(excludeContentButton, true);
 
-  logEvent("askback_triggered", {
-    source: evaluation.source.name,
+  logEvent("bystander_risk_detected", {
+    context: evaluation.context.name,
     riskScore: evaluation.riskScore,
     outsidePolicy: evaluation.outsidePolicy,
   });
+  logEvent("ask_back_triggered", {
+    rule: "bystander_approval_required",
+    context: evaluation.context.name,
+  });
 }
 
-function triggerTracePause(evaluation) {
+function triggerOversightPause(evaluation) {
   state.pausedEvent = evaluation;
   state.escalationActive = true;
   state.escalationEvents += 1;
-  state.stage = "trace_pause";
-  state.sourceOutcome = "trace_continued";
+  state.stage = "oversight_pause";
+  state.runOutcome = "oversight_continued";
 
   stageLabel.textContent = "Oversight Checkpoint";
   agentState.textContent = "Paused for oversight review";
@@ -898,15 +918,15 @@ function triggerTracePause(evaluation) {
   askbackCopy.textContent =
     "The latest context includes another person's voice. This baseline can continue the run, but it does not offer contract repair as the main decision.";
   askbackRule.textContent = "No editable delegation boundary is available in this baseline.";
-  askbackRisk.textContent = `${evaluation.source.name} may be stored or disclosed without a reusable privacy rule.`;
+  askbackRisk.textContent = `${evaluation.context.name} may be stored or disclosed without a reusable privacy rule.`;
   askbackImpact.textContent =
     "Continuing keeps bystander content in the final output path without revising future autonomy.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
+  setButtonEnabled(excludeContentButton, false);
 
-  logEvent("trace_pause", {
-    source: evaluation.source.name,
+  logEvent("oversight_privacy_marker", {
+    context: evaluation.context.name,
     riskScore: evaluation.riskScore,
   });
 }
@@ -920,10 +940,11 @@ function reviseContract() {
   state.stage = "repair";
   state.escalationActive = false;
   state.pausedEvent = null;
-  state.blockedSourceIds.push("bystander");
+  state.blockedContextIds.push("bystander");
   state.currentConfidence = clampConfidence(state.currentConfidence + 6);
-  sourceBlogs.checked = true;
-  banForums.checked = true;
+  askBeforePersonalMemory.checked = true;
+  bystanderApprovalRequired.checked = true;
+  externalSharingApproval.checked = true;
   renderContractPreview();
 
   stageLabel.textContent = "Repair and Rerun";
@@ -931,7 +952,7 @@ function reviseContract() {
   agentState.textContent = "Waiting for rerun";
   complianceStatus.textContent = "Revised policy ready for checkpoint rerun";
 
-  addRevision("Future similar bystander comments will be excluded unless explicitly approved.");
+  addRevision("Contract revised: future bystander comments and personal details require explicit approval before storage or disclosure.");
   addRevision("Memory repair: private meeting details will not be stored without confirmation.");
   addTimelineItem(
     "Contract revised",
@@ -960,13 +981,16 @@ function reviseContract() {
     "The agent can continue from the checkpoint under revised sensing, memory, and disclosure boundaries.";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
-  setButtonEnabled(denySourceButton, false);
+  setButtonEnabled(excludeContentButton, false);
   setButtonEnabled(rerunStepButton, true);
   updateRuntimeStatus();
 
   logEvent("contract_revised", {
-    revision:
-      "Excluded bystander voices, blocked private memory updates, and required approval before sharing.",
+    updatedRules: [
+      "bystanderApprovalRequired",
+      "askBeforePersonalMemory",
+      "externalSharingApproval",
+    ],
     contract: currentContractSnapshot(),
   });
 }
@@ -977,7 +1001,7 @@ function rerunStep() {
   }
 
   state.stage = "rerun";
-  state.sourceOutcome = "governance_repair";
+  state.runOutcome = "governance_repair";
   state.runtimeBudgetUsed += 2;
   state.currentConfidence = clampConfidence(state.currentConfidence + 8);
 
@@ -996,8 +1020,8 @@ function rerunStep() {
 
   setButtonEnabled(rerunStepButton, false);
   updateRuntimeStatus();
-  logEvent("rerun_started", {
-    blockedSources: [...state.blockedSourceIds],
+  logEvent("safe_rerun_started", {
+    blockedContexts: [...state.blockedContextIds],
   });
 
   scheduleCompletion("governance_repair");
@@ -1023,57 +1047,47 @@ function handleSynthesisStep() {
   updateRuntimeStatus();
 
   if (state.activeCondition === "blackbox") {
-    state.sourceOutcome = "blackbox_hidden_conflict";
-  } else if (state.activeCondition === "trace") {
-    state.sourceOutcome = "trace_continued";
-  } else if (state.sourceOutcome === "governance_repair") {
-    state.sourceOutcome = state.pausedEvent ? "governance_repair" : "governance_no_pause";
+    state.runOutcome = "blackbox_hidden_conflict";
+  } else if (state.activeCondition === "oversight") {
+    state.runOutcome = "oversight_continued";
+  } else if (state.runOutcome === "governance_repair") {
+    state.runOutcome = state.pausedEvent ? "governance_repair" : "governance_no_pause";
   }
 
-  scheduleCompletion(state.sourceOutcome);
+  scheduleCompletion(state.runOutcome);
 }
 
 function buildSummarySections(outcome) {
   if (outcome === "governance_repair") {
     return [
       {
-        title: "Result",
+        title: "Action paused",
         content:
-          "The final meeting summary uses the user's own notes and action-item memory without bystander content.",
+          "The assistant paused before using a possible bystander comment.",
       },
       {
-        title: "Data used",
-        content: [
-          "Used: user's spoken notes",
-          "Used: user's action-item memory",
-          "Excluded: bystander voice segment after policy repair",
-        ],
-      },
-      {
-        title: "Actions and rules",
-        content: [
-          "Allowed: summarize the user's own notes.",
-          "Escalated: bystander voice required ask-back before processing.",
-          "Blocked: private bystander details were not stored or disclosed.",
-        ],
-      },
-      {
-        title: "Escalations",
-        content: ["1 ask-back triggered by bystander privacy risk."],
-      },
-      {
-        title: "Contract revisions",
-        content: [
-          "Bystander voices remained outside the sensing boundary.",
-          "Memory update blocked for private meeting details.",
-          "External sharing requires approval.",
-          "Summary reran from the last safe checkpoint.",
-        ],
-      },
-      {
-        title: "Remaining uncertainty",
+        title: "Rule used",
         content:
-          "The assistant may need a future ask-back if the user wants to include bystander contributions with consent.",
+          "Bystander data requires approval before storage or disclosure.",
+      },
+      {
+        title: "User decision",
+        content:
+          "The user excluded the bystander content and revised the contract.",
+      },
+      {
+        title: "Repair outcome",
+        content:
+          "Future similar bystander comments and personal details will require explicit approval before storage or disclosure.",
+      },
+      {
+        title: "Final output",
+        content: [
+          "Generated: private action-item summary.",
+          "Used: user's spoken notes and action-item memory.",
+          "Excluded: bystander voice segment.",
+          "Not stored: private bystander or meeting details.",
+        ],
       },
     ];
   }
@@ -1097,7 +1111,7 @@ function buildSummarySections(outcome) {
         title: "Actions and rules",
         content: [
           "Allowed: summarize the user's own notes.",
-          "Escalated: bystander voice required ask-back before processing.",
+          "Escalated: bystander voice required ask-back before storage or disclosure.",
           "Allowed once: anonymized mention was included without changing the contract.",
         ],
       },
@@ -1112,7 +1126,7 @@ function buildSummarySections(outcome) {
       {
         title: "Remaining uncertainty",
         content:
-          "The exception helps this output but leaves future bystander processing unchanged.",
+          "The exception helps this output but leaves future bystander handling unchanged.",
       },
     ];
   }
@@ -1136,7 +1150,7 @@ function buildSummarySections(outcome) {
         title: "Actions and rules",
         content: [
           "Allowed: summarize the user's own notes.",
-          "Escalated: bystander voice required ask-back before processing.",
+          "Escalated: bystander voice required ask-back before storage or disclosure.",
           "Blocked for this run: bystander content was excluded without durable repair.",
         ],
       },
@@ -1156,7 +1170,7 @@ function buildSummarySections(outcome) {
     ];
   }
 
-  if (outcome === "trace_continued") {
+  if (outcome === "oversight_continued") {
     return [
       {
         title: "Result",
@@ -1319,11 +1333,11 @@ function completeRun(outcome) {
   const finalConfidenceByOutcome = {
     governance_repair: 84,
     blackbox_hidden_conflict: 71,
-    trace_continued: 74,
+    oversight_continued: 74,
   };
   const completionTitleByOutcome = {
     blackbox_hidden_conflict: "Black-box output produced",
-    trace_continued: "Oversight-informed output produced",
+    oversight_continued: "Oversight-informed output produced",
     default: "Governance-aware output produced",
   };
 
@@ -1353,10 +1367,10 @@ function completeRun(outcome) {
 
   renderSummary();
   resetAskbackPanel();
-  setButtonEnabled(startResearchButton, false);
+  setButtonEnabled(startRunButton, false);
   setButtonEnabled(rerunStepButton, false);
 
-  logEvent("run_completed", {
+  logEvent("audit_summary_generated", {
     outcome,
     finalConfidence: state.currentConfidence,
     escalationCount: state.escalationEvents,
@@ -1419,7 +1433,7 @@ function exportSessionLog() {
 
 // Event wiring
 draftContractButton.addEventListener("click", draftContract);
-startResearchButton.addEventListener("click", startResearch);
+startRunButton.addEventListener("click", startAmbientRun);
 reviseContractButton.addEventListener("click", reviseContract);
 rerunStepButton.addEventListener("click", rerunStep);
 resetDemoButton.addEventListener("click", initialize);
@@ -1431,7 +1445,7 @@ approveOnceButton.addEventListener("click", () => {
     return;
   }
 
-  if (state.activeCondition === "trace") {
+  if (state.activeCondition === "oversight") {
     addRevision("Participant continued after inspecting the privacy marker.");
     addTimelineItem(
       "Oversight marker reviewed",
@@ -1443,36 +1457,38 @@ approveOnceButton.addEventListener("click", () => {
     );
     state.pausedEvent = null;
     state.escalationActive = false;
-    scheduleCompletion("trace_continued");
+    scheduleCompletion("oversight_continued");
     logEvent("oversight_continue", {
       context: "Bystander voice segment",
     });
     return;
   }
 
-  addRevision("Included an anonymized bystander mention once without changing policy.");
+  addRevision("Approved once: this content may be used for the current summary, but future bystander-related content will still require approval.");
   addTimelineItem(
     "One-time anonymized exception approved",
     "This path keeps the run moving but does not repair future bystander handling."
   );
   addRuntimeLog(
     "Exception",
-    "Participant allowed an anonymized bystander mention once without revising the policy."
+    "Participant included an anonymized bystander mention once without revising the policy."
   );
   state.pausedEvent = null;
   state.escalationActive = false;
   scheduleCompletion("approved_exception");
-  logEvent("include_anonymized_once", {
+  logEvent("content_approved_once", {
+    rule: "bystander_approval_required",
+    scope: "single_use",
     context: "Bystander voice segment",
   });
 });
 
-denySourceButton.addEventListener("click", () => {
+excludeContentButton.addEventListener("click", () => {
   if (!state.pausedEvent || state.activeCondition !== "governance") {
     return;
   }
 
-  addRevision("Excluded bystander content for this run.");
+  addRevision("Excluded: bystander-related content was removed from the summary and was not stored as memory.");
   addTimelineItem(
     "Bystander content excluded",
     "The run rejects the bystander segment but does not revise the broader policy."
@@ -1484,7 +1500,9 @@ denySourceButton.addEventListener("click", () => {
   state.pausedEvent = null;
   state.escalationActive = false;
   scheduleCompletion("denied_for_run");
-  logEvent("exclude_content", {
+  logEvent("content_excluded", {
+    rule: "bystander_data_excluded",
+    memoryStored: false,
     context: "Bystander voice segment",
   });
 });

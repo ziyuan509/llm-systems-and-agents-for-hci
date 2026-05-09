@@ -385,7 +385,7 @@ button.disabled {
 }
 
 .timeline,
-.source-list,
+.context-list,
 .revision-list,
 .event-log-preview {
   list-style: none;
@@ -445,7 +445,7 @@ button.disabled {
   font-size: 15px;
 }
 
-.source-list,
+.context-list,
 .revision-list,
 .runtime-log {
   display: flex;
@@ -453,7 +453,7 @@ button.disabled {
   gap: 12px;
 }
 
-.source-list li,
+.context-list li,
 .revision-list li,
 .runtime-log li {
   padding: 16px;
@@ -463,7 +463,7 @@ button.disabled {
   color: var(--text-muted);
 }
 
-.source-list strong {
+.context-list strong {
   display: block;
   color: var(--text-main);
   margin-bottom: 4px;

@@ -34,11 +34,11 @@ The user asks:
 
 The system suggests:
 
-- summarize the user's spoken notes
-- remember the user's action items
-- do not process bystander voices by default
-- require approval before external sharing
-- ask back when bystander or disclosure risk crosses the threshold
+- Summarize my spoken notes
+- Remember my task preferences
+- Ask before storing personal details
+- Do not store bystander voices without approval
+- Require approval before external sharing
 
 ## Runtime Event
 
