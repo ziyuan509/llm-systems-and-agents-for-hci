@@ -1,0 +1,2 @@
+participant,condition,task_success,hesitation_point,misunderstood_rule,repair_action,audit_explanation_success,quote,design_implication
+P01,Governance UI,yes,bystander voice control,process vs store,ask-before-store,yes,"...",Need clearer sensing and memory separation

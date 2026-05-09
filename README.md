@@ -9,7 +9,7 @@ agent systems, and HCI-oriented research prototypes.
 
 This project investigates how ordinary users can govern AI agents that sense,
 remember, act, and disclose information in shared physical spaces without
-editing raw prompts or reading low-level execution traces.
+editing raw prompts or reading developer-facing execution traces.
 
 ## Research Focus
 

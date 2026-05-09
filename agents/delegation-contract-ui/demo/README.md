@@ -53,7 +53,7 @@ Recommended study flow:
 ## Scenario
 
 A student uses an ambient assistant during a shared studio meeting. The assistant
-can summarize the user's notes, remember task preferences, and draft a follow-up
+can summarize the user's notes, remember action items, and draft a follow-up
 message. When it detects another student's voice, the governance UI pauses and
 asks whether the bystander content should be excluded, included anonymously, or
 handled through a repaired delegation contract.

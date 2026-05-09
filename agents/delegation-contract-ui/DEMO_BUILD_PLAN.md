@@ -32,7 +32,7 @@ The demo must include:
 Working scenario:
 
 - a student uses an ambient AI assistant during a shared studio meeting
-- the assistant may summarize the user's notes and remember task preferences
+- the assistant may summarize the user's notes and remember action items
 - the assistant detects another student's voice while preparing the summary
 - the system escalates because bystander processing is outside the current contract
 - the user repairs the contract and reruns the summary from a safe checkpoint

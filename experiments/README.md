@@ -2,6 +2,7 @@
 
 This directory is for runnable experiments, task scripts, and observation artifacts.
 
-Local path:
+## Current Artifacts
 
-- `/Users/runner/Desktop/llm-systems-and-agents-for-hci/experiments`
+- `pilot_analysis_template.csv`: lightweight coding sheet for 3-5 participant
+  walkthroughs of the ambient AI delegation-contract demo.

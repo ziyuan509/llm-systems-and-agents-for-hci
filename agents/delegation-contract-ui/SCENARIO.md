@@ -35,7 +35,7 @@ The user asks:
 The system suggests:
 
 - summarize the user's spoken notes
-- remember the user's task preferences
+- remember the user's action items
 - do not process bystander voices by default
 - require approval before external sharing
 - ask back when bystander or disclosure risk crosses the threshold
@@ -45,7 +45,7 @@ The system suggests:
 During execution, the assistant handles:
 
 - the user's spoken meeting notes
-- the user's task preference memory
+- the user's action-item memory
 - a bystander voice segment detected while preparing the summary
 
 The system detects that:
@@ -72,7 +72,7 @@ The system reruns the summary from a safe checkpoint.
 It then produces:
 
 - a meeting summary based on the user's own notes
-- a task preference memory update for the user only
+- an action-item memory update for the user only
 - an audit note that bystander content was excluded due to the revised contract
 
 ## Why This Scenario Is Good for the MVP

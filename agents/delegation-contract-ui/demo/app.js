@@ -76,7 +76,7 @@ const conditionModes = {
     askbackDefault:
       "The agent will pause here when a contract-relevant event occurs.",
     conditionCopy:
-      "Governance UI exposes sensing, memory, action, disclosure, and escalation boundaries before the assistant acts.",
+      "Contract UI exposes controls, ask-back, and durable repair across sensing, memory, actions, disclosure, and escalation.",
     contractModeIdle: "Draft",
     contractModeActive: "Active",
     approveLabel: "Include Anonymized",
@@ -95,7 +95,7 @@ const conditionModes = {
     askbackDefault:
       "This baseline does not interrupt the run for privacy repair. The system proceeds with its preset behavior.",
     conditionCopy:
-      "Black-box baseline hides sensing, memory, and disclosure policy. Participants only see high-level progress and the final output.",
+      "Black-box baseline offers no visible controls, no ask-back, and no durable repair; participants only see progress and the final output.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Preset hidden",
     approveLabel: "Include Anonymized",
@@ -112,9 +112,9 @@ const conditionModes = {
     startButton: "Start Oversight Run",
     askbackTitle: "Oversight checkpoint",
     askbackDefault:
-      "This baseline reveals low-level execution steps instead of high-level contract repair controls.",
+      "This baseline reveals step-level privacy markers instead of high-level contract repair controls.",
     conditionCopy:
-      "Oversight baseline shows step-level privacy markers, but it does not make policy repair the primary interaction.",
+      "Oversight baseline surfaces privacy markers, but it does not let participants convert a decision into a reusable contract repair.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Oversight visible",
     approveLabel: "Continue Run",
@@ -140,8 +140,8 @@ const scenario = {
     {
       id: "memory",
       type: "memory",
-      name: "Task preference memory",
-      note: "Stores the user's preferred follow-up format for future meetings.",
+      name: "Action-item memory",
+      note: "Stores the user's own action items while avoiding unrelated personal details.",
       budget: 4,
       confidenceDelta: 6,
       conflict: false,
@@ -414,8 +414,8 @@ function logEvent(type, payload = {}) {
 function currentContractSnapshot() {
   return {
     summarizeUserNotes: sourceOfficial.checked,
-    rememberTaskPreferences: sourceMajor.checked,
-    processBystanderVoices: sourceBlogs.checked,
+    rememberActionItemsOnly: sourceMajor.checked,
+    requireBystanderAskBack: sourceBlogs.checked,
     requireDisclosureApproval: banForums.checked,
     reviewWindow: timeBudgetSelect.value,
     allowedActions: toolScopeSelect.value,
@@ -429,19 +429,21 @@ function buildContractPreview() {
   const allowedBehaviors = [];
 
   if (contract.summarizeUserNotes) allowedBehaviors.push("summarize the user's notes");
-  if (contract.rememberTaskPreferences) allowedBehaviors.push("remember task preferences");
-  if (contract.processBystanderVoices) allowedBehaviors.push("process bystander voices");
+  if (contract.rememberActionItemsOnly) allowedBehaviors.push("remember the user's action items only");
 
   const behaviorText = allowedBehaviors.length
     ? allowedBehaviors.join(", ")
     : "no sensing or memory actions until the user adds one";
+  const bystanderPolicy = contract.requireBystanderAskBack
+    ? "Bystander voices require ask-back before processing or storage."
+    : "Bystander voices may be processed without a dedicated ask-back rule.";
   const disclosurePolicy = contract.requireDisclosureApproval
     ? "External sharing requires user approval."
     : "The assistant may share outputs when other rules allow it.";
 
   return (
     `The assistant may ${behaviorText} within a ${contract.reviewWindow} review window. ` +
-    `${disclosurePolicy} It may ${contract.allowedActions.toLowerCase()} and should ask back when bystander or disclosure risk reaches ${contract.escalationThreshold}%. ` +
+    `${bystanderPolicy} ${disclosurePolicy} It may ${contract.allowedActions.toLowerCase()} and should ask back when bystander or disclosure risk reaches ${contract.escalationThreshold}%. ` +
     `It should only act autonomously when confidence is at least ${contract.confidenceThreshold}%.`
   );
 }
@@ -518,7 +520,7 @@ function resetRunState() {
 function setDefaultControls() {
   sourceOfficial.checked = true;
   sourceMajor.checked = true;
-  sourceBlogs.checked = false;
+  sourceBlogs.checked = true;
   banForums.checked = true;
   timeBudgetSelect.value = "15 minutes";
   toolScopeSelect.value = "Summarize + draft follow-up";
@@ -609,7 +611,7 @@ function buildRunQueue() {
     });
   }
 
-  if (contract.rememberTaskPreferences) {
+  if (contract.rememberActionItemsOnly) {
     steps.push({ type: "collect", source: scenario.sources[1] });
   } else {
     steps.push({
@@ -718,7 +720,7 @@ function updateRuntimeStatus() {
 function evaluateSource(source) {
   const contract = currentContractSnapshot();
   const outsidePolicy =
-    source.type === "bystander" && !contract.processBystanderVoices;
+    source.type === "bystander" && contract.requireBystanderAskBack;
   const conflict = source.conflict;
   let riskScore = 28;
 
@@ -763,8 +765,8 @@ function handleSourceStep(source) {
     addSource(
       makeSourceRecord(
         source,
-        "Outside current boundary",
-        "Detected during the ambient run, but outside the current bystander privacy rule."
+        "Ask-back required",
+        "Detected during the ambient run, and the contract requires user confirmation before processing or storage."
       )
     );
   }
@@ -772,7 +774,7 @@ function handleSourceStep(source) {
   if (source.id === "memory") {
     addTimelineItem(
       "User context prepared",
-      "The assistant can summarize the meeting and remember the user's own task preference."
+      "The assistant can summarize the meeting and remember the user's own action items."
     );
   }
 
@@ -799,7 +801,7 @@ function handleSourceStep(source) {
     );
   } else if (evaluation.conflict) {
     complianceStatus.textContent = evaluation.outsidePolicy
-      ? "Bystander content blocked by current contract"
+      ? "Bystander content requires user confirmation"
       : "Privacy risk noted below escalation threshold";
     state.sourceOutcome = evaluation.outsidePolicy
       ? "denied_for_run"
@@ -831,7 +833,7 @@ function triggerGovernanceAskback(evaluation) {
   stageLabel.textContent = "Ask-Back";
   agentState.textContent = "Paused for policy decision";
   complianceStatus.textContent = evaluation.outsidePolicy
-    ? "Bystander content violates current contract"
+    ? "Bystander content requires ask-back"
     : "Privacy risk exceeds escalation threshold";
   escalationCount.textContent = String(state.escalationEvents);
   updateRuntimeStatus();
@@ -920,32 +922,42 @@ function reviseContract() {
   state.pausedEvent = null;
   state.blockedSourceIds.push("bystander");
   state.currentConfidence = clampConfidence(state.currentConfidence + 6);
-  sourceBlogs.checked = false;
+  sourceBlogs.checked = true;
   banForums.checked = true;
+  renderContractPreview();
 
   stageLabel.textContent = "Repair and Rerun";
   contractMode.textContent = "Revised";
   agentState.textContent = "Waiting for rerun";
   complianceStatus.textContent = "Revised policy ready for checkpoint rerun";
 
-  addRevision("Kept bystander voices excluded and required approval before external sharing.");
+  addRevision("Future similar bystander comments will be excluded unless explicitly approved.");
+  addRevision("Memory repair: private meeting details will not be stored without confirmation.");
   addTimelineItem(
     "Contract revised",
     "User tightens the sensing and disclosure boundary instead of approving the exception."
+  );
+  addTimelineItem(
+    "Memory repair recorded",
+    "The assistant attempted to store a private meeting detail; the repaired contract blocks similar memory updates."
   );
   addRuntimeLog(
     "Repair",
     "Participant excluded bystander voices and prepared a rerun from the last safe checkpoint."
   );
+  addRuntimeLog(
+    "Memory repair",
+    "Memory update blocked. Future personal details from shared-space meetings require confirmation before storage."
+  );
 
   askbackPanel.className = "card callout safe";
   askbackTitle.textContent = "Repair recorded";
   askbackCopy.textContent =
-    "Revision recorded. The system can rerun the summary without storing or disclosing bystander content.";
+    "Revision recorded. The system can rerun the summary without storing or disclosing bystander content, and similar personal details now require confirmation before memory updates.";
   askbackRule.textContent = "Sensing boundary updated: bystander voices remain excluded.";
-  askbackRisk.textContent = "The bystander comment will not shape this meeting summary.";
+  askbackRisk.textContent = "The bystander comment will not shape this meeting summary or future memory.";
   askbackImpact.textContent =
-    "The agent can continue from the checkpoint under the revised autonomy boundary.";
+    "The agent can continue from the checkpoint under revised sensing, memory, and disclosure boundaries.";
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
@@ -953,7 +965,8 @@ function reviseContract() {
   updateRuntimeStatus();
 
   logEvent("contract_revised", {
-    revision: "Excluded bystander voices and required approval before sharing.",
+    revision:
+      "Excluded bystander voices, blocked private memory updates, and required approval before sharing.",
     contract: currentContractSnapshot(),
   });
 }
@@ -1026,14 +1039,22 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final meeting summary uses the user's own notes and task preferences without bystander content.",
+          "The final meeting summary uses the user's own notes and action-item memory without bystander content.",
       },
       {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Excluded: bystander voice segment after policy repair",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: summarize the user's own notes.",
+          "Escalated: bystander voice required ask-back before processing.",
+          "Blocked: private bystander details were not stored or disclosed.",
         ],
       },
       {
@@ -1044,6 +1065,7 @@ function buildSummarySections(outcome) {
         title: "Contract revisions",
         content: [
           "Bystander voices remained outside the sensing boundary.",
+          "Memory update blocked for private meeting details.",
           "External sharing requires approval.",
           "Summary reran from the last safe checkpoint.",
         ],
@@ -1067,8 +1089,16 @@ function buildSummarySections(outcome) {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Exception: anonymized bystander mention",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: summarize the user's own notes.",
+          "Escalated: bystander voice required ask-back before processing.",
+          "Allowed once: anonymized mention was included without changing the contract.",
         ],
       },
       {
@@ -1098,8 +1128,16 @@ function buildSummarySections(outcome) {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Denied for this run: bystander voice segment",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: summarize the user's own notes.",
+          "Escalated: bystander voice required ask-back before processing.",
+          "Blocked for this run: bystander content was excluded without durable repair.",
         ],
       },
       {
@@ -1129,8 +1167,16 @@ function buildSummarySections(outcome) {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Included: bystander voice segment",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: summarize the user's own notes.",
+          "Surfaced: oversight marker showed bystander privacy risk.",
+          "Continued: bystander content remained in the output path without policy repair.",
         ],
       },
       {
@@ -1160,8 +1206,16 @@ function buildSummarySections(outcome) {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Included without repair: bystander voice segment",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: baseline summary proceeded under hidden policy assumptions.",
+          "Not surfaced: bystander content was not escalated to the user.",
+          "Not repaired: no durable contract update was available.",
         ],
       },
       {
@@ -1191,8 +1245,16 @@ function buildSummarySections(outcome) {
         title: "Data used",
         content: [
           "Used: user's spoken notes",
-          "Used: user's task preference memory",
+          "Used: user's action-item memory",
           "Included under original threshold: bystander voice segment",
+        ],
+      },
+      {
+        title: "Actions and rules",
+        content: [
+          "Allowed: summarize the user's own notes.",
+          "Allowed: bystander content stayed below the configured ask-back threshold.",
+          "Not repaired: no boundary change was made.",
         ],
       },
       {
@@ -1220,7 +1282,14 @@ function buildSummarySections(outcome) {
       title: "Data used",
       content: [
         "Used: user's spoken notes",
-        "Used: user's task preference memory",
+        "Used: user's action-item memory",
+      ],
+    },
+    {
+      title: "Actions and rules",
+      content: [
+        "Allowed: summarize the user's own notes.",
+        "Allowed: action-item memory stayed within the original contract.",
       ],
     },
     {
