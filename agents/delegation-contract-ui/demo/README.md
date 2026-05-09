@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This is the first local clickable prototype for the `delegation-contract-ui` project.
+This is the first local clickable prototype for the `delegation-contract-ui`
+project, reframed for privacy-sensitive pervasive AI.
 
 It demonstrates:
 
@@ -12,9 +13,10 @@ It demonstrates:
 - ask-back / escalation
 - repair and rerun
 - governance-aware final summary
+- bystander privacy handling in a shared-space ambient AI scenario
 
-It is intentionally static: there is no backend, build step, or live research
-agent dependency. The prototype uses scripted state transitions so the study
+It is intentionally static: there is no backend, build step, or live sensing
+or agent dependency. The prototype uses scripted state transitions so the study
 flow can be piloted before implementing heavier infrastructure.
 
 ## Run
@@ -47,3 +49,11 @@ Recommended study flow:
 - `Black-box baseline`: hides policy controls and proceeds without repair.
 - `Oversight baseline`: exposes execution-level conflict markers without making
   policy repair the main interaction.
+
+## Scenario
+
+A student uses an ambient assistant during a shared studio meeting. The assistant
+can summarize the user's notes, remember task preferences, and draft a follow-up
+message. When it detects another student's voice, the governance UI pauses and
+asks whether the bystander content should be excluded, included anonymously, or
+handled through a repaired delegation contract.

@@ -71,17 +71,17 @@ const conditionModes = {
     contractEditable: true,
     stageLabel: "Runtime Governance",
     draftButton: "Draft Contract",
-    startButton: "Start Research",
+    startButton: "Start Ambient Run",
     askbackTitle: "Ask-back panel",
     askbackDefault:
       "The agent will pause here when a contract-relevant event occurs.",
     conditionCopy:
-      "Governance UI exposes editable policy controls, runtime ask-back, and explicit contract repair before rerun.",
+      "Governance UI exposes sensing, memory, action, disclosure, and escalation boundaries before the assistant acts.",
     contractModeIdle: "Draft",
     contractModeActive: "Active",
-    approveLabel: "Approve Once",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Deny Source",
+    approveLabel: "Include Anonymized",
+    reviseLabel: "Edit Contract",
+    denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
   blackbox: {
@@ -93,14 +93,14 @@ const conditionModes = {
     startButton: "Start Baseline Run",
     askbackTitle: "Run interruption",
     askbackDefault:
-      "This baseline does not interrupt the run for contract repair. The system proceeds with its preset policy.",
+      "This baseline does not interrupt the run for privacy repair. The system proceeds with its preset behavior.",
     conditionCopy:
-      "Black-box baseline hides editable policy and user repair. Participants only see high-level progress and the final answer.",
+      "Black-box baseline hides sensing, memory, and disclosure policy. Participants only see high-level progress and the final output.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Preset hidden",
-    approveLabel: "Approve Once",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Deny Source",
+    approveLabel: "Include Anonymized",
+    reviseLabel: "Edit Contract",
+    denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
   trace: {
@@ -114,43 +114,43 @@ const conditionModes = {
     askbackDefault:
       "This baseline reveals low-level execution steps instead of high-level contract repair controls.",
     conditionCopy:
-      "Oversight baseline shows step-level conflict markers, but it does not make policy repair the primary interaction.",
+      "Oversight baseline shows step-level privacy markers, but it does not make policy repair the primary interaction.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Oversight visible",
     approveLabel: "Continue Run",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Deny Source",
+    reviseLabel: "Edit Contract",
+    denyLabel: "Exclude Content",
     rerunLabel: "Rerun from safe checkpoint",
   },
 };
 
 const scenario = {
   taskNote:
-    "User requests a short research brief with source trust constraints.",
+    "User delegates a shared studio meeting to an ambient assistant with bystander privacy constraints.",
   sources: [
     {
-      id: "official",
-      type: "official",
-      name: "Official product announcement",
-      note: "Primary source aligned with the vendor's public statement.",
+      id: "notes",
+      type: "notes",
+      name: "User spoken notes",
+      note: "Summarizes the user's own meeting contributions and action items.",
       budget: 2,
       confidenceDelta: 8,
       conflict: false,
     },
     {
-      id: "major",
-      type: "major",
-      name: "Major reporting summary",
-      note: "Secondary reporting that agrees on the core feature change.",
+      id: "memory",
+      type: "memory",
+      name: "Task preference memory",
+      note: "Stores the user's preferred follow-up format for future meetings.",
       budget: 4,
       confidenceDelta: 6,
       conflict: false,
     },
     {
-      id: "blog",
-      type: "blog",
-      name: "Interpretive research blog",
-      note: "Offers a conflicting interpretation of rollout scope.",
+      id: "bystander",
+      type: "bystander",
+      name: "Bystander voice segment",
+      note: "Detects another student's comment while drafting the meeting summary.",
       budget: 4,
       confidenceDelta: -13,
       conflict: true,
@@ -237,7 +237,7 @@ function getConditionKey() {
   if (label === "Black-box baseline") {
     return "blackbox";
   }
-  if (label === "Trace baseline" || label === "Oversight baseline") {
+  if (label === "Oversight baseline") {
     return "trace";
   }
   return "governance";
@@ -294,7 +294,7 @@ function renderSources() {
   clearElement(sourcesList);
   if (!state.sources.length) {
     sourcesList.appendChild(
-      createTextElement("li", "No sources consulted yet.")
+      createTextElement("li", "No ambient context handled yet.")
     );
     return;
   }
@@ -413,12 +413,12 @@ function logEvent(type, payload = {}) {
 
 function currentContractSnapshot() {
   return {
-    officialSources: sourceOfficial.checked,
-    majorReporting: sourceMajor.checked,
-    researchBlogs: sourceBlogs.checked,
-    banForums: banForums.checked,
-    timeBudget: timeBudgetSelect.value,
-    toolScope: toolScopeSelect.value,
+    summarizeUserNotes: sourceOfficial.checked,
+    rememberTaskPreferences: sourceMajor.checked,
+    processBystanderVoices: sourceBlogs.checked,
+    requireDisclosureApproval: banForums.checked,
+    reviewWindow: timeBudgetSelect.value,
+    allowedActions: toolScopeSelect.value,
     confidenceThreshold: Number(confidenceThreshold.value),
     escalationThreshold: Number(escalationThreshold.value),
   };
@@ -426,23 +426,23 @@ function currentContractSnapshot() {
 
 function buildContractPreview() {
   const contract = currentContractSnapshot();
-  const allowedSources = [];
+  const allowedBehaviors = [];
 
-  if (contract.officialSources) allowedSources.push("official announcements");
-  if (contract.majorReporting) allowedSources.push("major reporting");
-  if (contract.researchBlogs) allowedSources.push("research blogs");
+  if (contract.summarizeUserNotes) allowedBehaviors.push("summarize the user's notes");
+  if (contract.rememberTaskPreferences) allowedBehaviors.push("remember task preferences");
+  if (contract.processBystanderVoices) allowedBehaviors.push("process bystander voices");
 
-  const sourceText = allowedSources.length
-    ? allowedSources.join(", ")
-    : "no source categories until the user adds one";
-  const forumPolicy = contract.banForums
-    ? "Anonymous forums are outside the autonomy boundary."
-    : "Anonymous forums may be considered if other rules allow them.";
+  const behaviorText = allowedBehaviors.length
+    ? allowedBehaviors.join(", ")
+    : "no sensing or memory actions until the user adds one";
+  const disclosurePolicy = contract.requireDisclosureApproval
+    ? "External sharing requires user approval."
+    : "The assistant may share outputs when other rules allow it.";
 
   return (
-    `The agent may use ${sourceText} within a ${contract.timeBudget} budget. ` +
-    `${forumPolicy} It may use ${contract.toolScope.toLowerCase()} and should ask back when conflict or policy mismatch reaches ${contract.escalationThreshold}%. ` +
-    `It should only synthesize autonomously when confidence is at least ${contract.confidenceThreshold}%.`
+    `The assistant may ${behaviorText} within a ${contract.reviewWindow} review window. ` +
+    `${disclosurePolicy} It may ${contract.allowedActions.toLowerCase()} and should ask back when bystander or disclosure risk reaches ${contract.escalationThreshold}%. ` +
+    `It should only act autonomously when confidence is at least ${contract.confidenceThreshold}%.`
   );
 }
 
@@ -518,10 +518,10 @@ function resetRunState() {
 function setDefaultControls() {
   sourceOfficial.checked = true;
   sourceMajor.checked = true;
-  sourceBlogs.checked = true;
+  sourceBlogs.checked = false;
   banForums.checked = true;
   timeBudgetSelect.value = "15 minutes";
-  toolScopeSelect.value = "Search + synthesis";
+  toolScopeSelect.value = "Summarize + draft follow-up";
   confidenceThreshold.value = 70;
   escalationThreshold.value = 55;
   syncSliders();
@@ -534,7 +534,7 @@ function initialize() {
   applyConditionUI();
 
   stageLabel.textContent = "Task Setup";
-  agentState.textContent = "Waiting for task";
+  agentState.textContent = "Waiting for shared-space task";
   budgetStatus.textContent = "0 / 15 min";
   complianceStatus.textContent = "No active run";
   runtimeConfidence.textContent = "N/A";
@@ -572,14 +572,14 @@ function draftContract() {
   addTimelineItem(
     config.contractEditable ? "Draft contract prepared" : "Baseline preset loaded",
     config.contractEditable
-      ? "System proposes trusted sources, budgets, and escalation defaults."
-      : "System loads a fixed policy so the participant sees the comparison condition."
+      ? "System proposes sensing, memory, disclosure, and escalation defaults."
+      : "System loads a fixed privacy behavior so the participant sees the comparison condition."
   );
 
   addRuntimeLog(
     "Planner",
     config.contractEditable
-      ? "Policy controls are available before execution starts."
+      ? "Autonomy boundaries are available before sensing and disclosure actions start."
       : "This condition fixes the policy before execution."
   );
 
@@ -595,27 +595,27 @@ function buildRunQueue() {
   const steps = [
     {
       type: "plan",
-      label: "Task parsed into a bounded research loop.",
+      label: "Shared-space task parsed into sensing, memory, and disclosure checks.",
     },
   ];
 
-  if (contract.officialSources) {
+  if (contract.summarizeUserNotes) {
     steps.push({ type: "collect", source: scenario.sources[0] });
   } else {
     steps.push({
       type: "skip",
       source: scenario.sources[0],
-      reason: "Official announcements were disabled in the current configuration.",
+      reason: "Summarizing the user's spoken notes is disabled in the current contract.",
     });
   }
 
-  if (contract.majorReporting) {
+  if (contract.rememberTaskPreferences) {
     steps.push({ type: "collect", source: scenario.sources[1] });
   } else {
     steps.push({
       type: "skip",
       source: scenario.sources[1],
-      reason: "Major reporting was disabled in the current configuration.",
+      reason: "Longer-term memory updates are disabled in the current contract.",
     });
   }
 
@@ -637,7 +637,7 @@ function startResearch() {
 
   stageLabel.textContent = config.stageLabel;
   contractMode.textContent = config.contractModeActive;
-  agentState.textContent = "Planning bounded research loop";
+  agentState.textContent = "Planning bounded ambient run";
   budgetStatus.textContent = `0 / ${getTimeBudgetLimit()} min`;
   complianceStatus.textContent = config.contractEditable
     ? "Within contract"
@@ -647,15 +647,15 @@ function startResearch() {
   addTimelineItem(
     "Execution started",
     config.contractEditable
-      ? "Agent begins a bounded research loop under the active contract."
-      : "Agent begins the same research task under a comparison condition."
+      ? "Assistant begins a bounded ambient run under the active contract."
+      : "Assistant begins the same shared-space task under a comparison condition."
   );
   addRuntimeLog(
     "Loop start",
-    `${state.queuedSteps.length - 1} execution steps queued for this scenario.`
+    `${state.queuedSteps.length - 1} sensing, memory, and disclosure checks queued.`
   );
 
-  logEvent("research_started", {
+  logEvent("ambient_run_started", {
     contract: currentContractSnapshot(),
     condition: state.activeCondition,
     queuedSteps: state.queuedSteps.map((step) => step.type),
@@ -717,7 +717,8 @@ function updateRuntimeStatus() {
 
 function evaluateSource(source) {
   const contract = currentContractSnapshot();
-  const outsidePolicy = source.type === "blog" && !contract.researchBlogs;
+  const outsidePolicy =
+    source.type === "bystander" && !contract.processBystanderVoices;
   const conflict = source.conflict;
   let riskScore = 28;
 
@@ -746,15 +747,15 @@ function handleSourceStep(source) {
     state.currentConfidence + source.confidenceDelta
   );
 
-  addRuntimeLog("Search", `Checked ${source.name}. ${source.note}`);
+  addRuntimeLog("Context check", `Handled ${source.name}. ${source.note}`);
 
   if (!evaluation.outsidePolicy) {
     addSource(
       makeSourceRecord(
         source,
-        source.conflict ? "Conflicting / low-trust" : "Trusted",
+        source.conflict ? "Sensitive / boundary risk" : "Allowed context",
         evaluation.conflict
-          ? "Conflicts with earlier evidence and lowers synthesis confidence."
+          ? "Includes bystander information and lowers autonomy confidence."
           : source.note
       )
     );
@@ -762,16 +763,16 @@ function handleSourceStep(source) {
     addSource(
       makeSourceRecord(
         source,
-        "Blocked by current policy",
-        "Found during search, but outside the revised source policy."
+        "Outside current boundary",
+        "Detected during the ambient run, but outside the current bystander privacy rule."
       )
     );
   }
 
-  if (source.id === "major") {
+  if (source.id === "memory") {
     addTimelineItem(
-      "Trusted sources collected",
-      "Official announcement and major reporting agree on the core feature change."
+      "User context prepared",
+      "The assistant can summarize the meeting and remember the user's own task preference."
     );
   }
 
@@ -787,19 +788,19 @@ function handleSourceStep(source) {
 
   if (evaluation.conflict && state.activeCondition === "blackbox") {
     state.sourceOutcome = "blackbox_hidden_conflict";
-    complianceStatus.textContent = "Hidden conflict absorbed into baseline run";
+    complianceStatus.textContent = "Bystander risk absorbed into baseline run";
     addTimelineItem(
-      "Conflicting source absorbed",
-      "The baseline keeps running without exposing a policy repair path."
+      "Bystander content absorbed",
+      "The baseline keeps running without exposing a privacy repair path."
     );
     addRuntimeLog(
       "Policy hidden",
-      "Low-trust conflicting evidence remains in the run without user intervention."
+      "Bystander information remains in the summary path without user intervention."
     );
   } else if (evaluation.conflict) {
     complianceStatus.textContent = evaluation.outsidePolicy
-      ? "Source blocked by current policy"
-      : "Conflict noted below escalation threshold";
+      ? "Bystander content blocked by current contract"
+      : "Privacy risk noted below escalation threshold";
     state.sourceOutcome = evaluation.outsidePolicy
       ? "denied_for_run"
       : "governance_no_pause";
@@ -811,8 +812,8 @@ function handleSourceStep(source) {
   }
 
   updateRuntimeStatus();
-  logEvent("source_processed", {
-    source: source.name,
+  logEvent("context_processed", {
+    context: source.name,
     conflict: evaluation.conflict,
     outsidePolicy: evaluation.outsidePolicy,
     riskScore: evaluation.riskScore,
@@ -830,33 +831,33 @@ function triggerGovernanceAskback(evaluation) {
   stageLabel.textContent = "Ask-Back";
   agentState.textContent = "Paused for policy decision";
   complianceStatus.textContent = evaluation.outsidePolicy
-    ? "Candidate source violates current policy"
-    : "Conflicting evidence exceeds escalation threshold";
+    ? "Bystander content violates current contract"
+    : "Privacy risk exceeds escalation threshold";
   escalationCount.textContent = String(state.escalationEvents);
   updateRuntimeStatus();
 
   addTimelineItem(
     "Escalation triggered",
     evaluation.outsidePolicy
-      ? "A candidate source falls outside the active source policy."
-      : "A conflicting source crosses the escalation threshold and requires contract guidance."
+      ? "The assistant detected bystander speech outside the active sensing boundary."
+      : "A privacy-sensitive context crosses the escalation threshold and requires contract guidance."
   );
   addRuntimeLog(
     "Escalation",
-    `Paused at risk score ${evaluation.riskScore} for ${evaluation.source.name}.`
+    `Paused at privacy risk score ${evaluation.riskScore} for ${evaluation.source.name}.`
   );
 
   askbackPanel.className = "card callout warning";
   askbackTitle.textContent = "Governance checkpoint";
   askbackCopy.textContent = evaluation.outsidePolicy
-    ? "The agent found a conflicting source that is outside the current contract. Approve it once, revise the contract, or deny it for this run."
-    : "The agent found a low-trust conflicting source. The contract allows you to approve the exception, revise the policy, or deny the source for this run.";
+    ? "The assistant detected another person's voice while preparing the meeting summary. Exclude it, include an anonymized mention, or revise the contract for future runs."
+    : "The assistant found privacy-sensitive context. The contract allows you to include an anonymized mention, edit the policy, or exclude it for this run.";
   askbackRule.textContent = evaluation.outsidePolicy
-    ? "Source boundary: research blogs are no longer authorized for autonomous use."
-    : "Escalation boundary: conflicting evidence crossed the ask-back threshold.";
-  askbackRisk.textContent = `${evaluation.source.name} has risk score ${evaluation.riskScore} and conflicts with trusted evidence.`;
+    ? "Sensing boundary: bystander voices are not authorized for autonomous processing."
+    : "Escalation boundary: privacy-sensitive context crossed the ask-back threshold.";
+  askbackRisk.textContent = `${evaluation.source.name} has risk score ${evaluation.riskScore} because it may store or disclose another person's comment.`;
   askbackImpact.textContent =
-    "Approve once keeps this run moving, revise changes future autonomy, and deny excludes the source only for this run.";
+    "Include anonymized keeps this run moving, edit contract changes future autonomy, and exclude content blocks it only for this run.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, true);
   setButtonEnabled(denySourceButton, true);
@@ -877,27 +878,27 @@ function triggerTracePause(evaluation) {
 
   stageLabel.textContent = "Oversight Checkpoint";
   agentState.textContent = "Paused for oversight review";
-  complianceStatus.textContent = "Low-level conflict marker surfaced";
+  complianceStatus.textContent = "Privacy marker surfaced";
   escalationCount.textContent = String(state.escalationEvents);
   updateRuntimeStatus();
 
   addTimelineItem(
     "Oversight checkpoint reached",
-    "The baseline pauses at a conflict marker rather than a contract repair prompt."
+    "The baseline pauses at a privacy marker rather than a contract repair prompt."
   );
   addRuntimeLog(
-    "Conflict marker",
-    "A disagreement was detected between official announcement and blog interpretation."
+    "Privacy marker",
+    "A bystander voice segment was detected while preparing the shared-space summary."
   );
 
   askbackPanel.className = "card callout neutral";
   askbackTitle.textContent = "Oversight checkpoint";
   askbackCopy.textContent =
-    "The latest source disagrees with prior evidence. This baseline can continue the run, but it does not offer contract repair as the main decision.";
+    "The latest context includes another person's voice. This baseline can continue the run, but it does not offer contract repair as the main decision.";
   askbackRule.textContent = "No editable delegation boundary is available in this baseline.";
-  askbackRisk.textContent = `${evaluation.source.name} conflicts with earlier trusted evidence.`;
+  askbackRisk.textContent = `${evaluation.source.name} may be stored or disclosed without a reusable privacy rule.`;
   askbackImpact.textContent =
-    "Continuing keeps the conflicting source in the final synthesis without revising future autonomy.";
+    "Continuing keeps bystander content in the final output path without revising future autonomy.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(denySourceButton, false);
@@ -917,31 +918,32 @@ function reviseContract() {
   state.stage = "repair";
   state.escalationActive = false;
   state.pausedEvent = null;
-  state.blockedSourceIds.push("blog");
+  state.blockedSourceIds.push("bystander");
   state.currentConfidence = clampConfidence(state.currentConfidence + 6);
   sourceBlogs.checked = false;
+  banForums.checked = true;
 
   stageLabel.textContent = "Repair and Rerun";
   contractMode.textContent = "Revised";
   agentState.textContent = "Waiting for rerun";
   complianceStatus.textContent = "Revised policy ready for checkpoint rerun";
 
-  addRevision("Removed research blogs from allowed sources after escalation.");
+  addRevision("Kept bystander voices excluded and required approval before external sharing.");
   addTimelineItem(
     "Contract revised",
-    "User tightens source policy instead of approving the exception."
+    "User tightens the sensing and disclosure boundary instead of approving the exception."
   );
   addRuntimeLog(
     "Repair",
-    "Participant removed research blogs and prepared a rerun from the last safe checkpoint."
+    "Participant excluded bystander voices and prepared a rerun from the last safe checkpoint."
   );
 
   askbackPanel.className = "card callout safe";
   askbackTitle.textContent = "Repair recorded";
   askbackCopy.textContent =
-    "Revision recorded. The system can rerun the synthesis step without the excluded source type.";
-  askbackRule.textContent = "Source boundary updated: research blogs are excluded.";
-  askbackRisk.textContent = "The disputed blog interpretation will not shape this synthesis.";
+    "Revision recorded. The system can rerun the summary without storing or disclosing bystander content.";
+  askbackRule.textContent = "Sensing boundary updated: bystander voices remain excluded.";
+  askbackRisk.textContent = "The bystander comment will not shape this meeting summary.";
   askbackImpact.textContent =
     "The agent can continue from the checkpoint under the revised autonomy boundary.";
   setButtonEnabled(approveOnceButton, false);
@@ -951,7 +953,7 @@ function reviseContract() {
   updateRuntimeStatus();
 
   logEvent("contract_revised", {
-    revision: "Removed research blogs from allowed sources.",
+    revision: "Excluded bystander voices and required approval before sharing.",
     contract: currentContractSnapshot(),
   });
 }
@@ -967,16 +969,16 @@ function rerunStep() {
   state.currentConfidence = clampConfidence(state.currentConfidence + 8);
 
   stageLabel.textContent = "Rerun";
-  agentState.textContent = "Rerunning synthesis";
+  agentState.textContent = "Rerunning summary";
   complianceStatus.textContent = "Contract satisfied after repair";
 
   addTimelineItem(
-    "Synthesis rerun",
-    "The agent reruns the synthesis step without the excluded source type."
+    "Summary rerun",
+    "The assistant reruns the summary without bystander content."
   );
   addRuntimeLog(
     "Rerun",
-    "Restarted from the last safe checkpoint with blogs excluded from synthesis."
+    "Restarted from the last safe checkpoint with bystander voices excluded from output and memory."
   );
 
   setButtonEnabled(rerunStepButton, false);
@@ -995,15 +997,15 @@ function scheduleCompletion(outcome) {
 
 function handleSynthesisStep() {
   state.stage = "synthesis";
-  agentState.textContent = "Synthesizing research brief";
+  agentState.textContent = "Preparing meeting summary";
   complianceStatus.textContent =
     state.activeCondition === "blackbox"
       ? "Baseline preset completed"
-      : "Preparing final synthesis";
+      : "Preparing governed output";
 
   addRuntimeLog(
-    "Synthesize",
-    "Combining collected evidence into the final research brief."
+    "Prepare output",
+    "Combining allowed notes and memory into the meeting summary."
   );
   updateRuntimeStatus();
 
@@ -1024,31 +1026,32 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final answer relies on the official announcement and major reporting.",
+          "The final meeting summary uses the user's own notes and task preferences without bystander content.",
       },
       {
-        title: "Sources",
+        title: "Data used",
         content: [
-          "Used: official product announcement",
-          "Used: major reporting summary",
-          "Excluded: conflicting research blog after policy revision",
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Excluded: bystander voice segment after policy repair",
         ],
       },
       {
         title: "Escalations",
-        content: ["1 ask-back triggered by conflicting evidence."],
+        content: ["1 ask-back triggered by bystander privacy risk."],
       },
       {
         title: "Contract revisions",
         content: [
-          "Research blogs were removed from allowed sources.",
-          "Synthesis reran from the last safe checkpoint.",
+          "Bystander voices remained outside the sensing boundary.",
+          "External sharing requires approval.",
+          "Summary reran from the last safe checkpoint.",
         ],
       },
       {
         title: "Remaining uncertainty",
         content:
-          "The excluded interpretation may be worth later review, but it is outside this run's revised autonomy boundary.",
+          "The assistant may need a future ask-back if the user wants to include bystander contributions with consent.",
       },
     ];
   }
@@ -1058,19 +1061,19 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final answer cites official and major sources plus a one-time exception for the conflicting blog.",
+          "The final meeting summary includes an anonymized one-time mention of bystander context.",
       },
       {
-        title: "Sources",
+        title: "Data used",
         content: [
-          "Used: official product announcement",
-          "Used: major reporting summary",
-          "Exception: conflicting research blog",
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Exception: anonymized bystander mention",
         ],
       },
       {
         title: "Escalations",
-        content: ["1 ask-back triggered by conflicting evidence."],
+        content: ["1 ask-back triggered by bystander privacy risk."],
       },
       {
         title: "Contract revisions",
@@ -1079,7 +1082,7 @@ function buildSummarySections(outcome) {
       {
         title: "Remaining uncertainty",
         content:
-          "The exception broadens coverage but leaves future autonomy unchanged.",
+          "The exception helps this output but leaves future bystander processing unchanged.",
       },
     ];
   }
@@ -1089,19 +1092,19 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final answer excludes the conflicting blog for this run only.",
+          "The final meeting summary excludes bystander content for this run only.",
       },
       {
-        title: "Sources",
+        title: "Data used",
         content: [
-          "Used: official product announcement",
-          "Used: major reporting summary",
-          "Denied for this run: conflicting research blog",
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Denied for this run: bystander voice segment",
         ],
       },
       {
         title: "Escalations",
-        content: ["1 ask-back triggered by conflicting evidence."],
+        content: ["1 ask-back triggered by bystander privacy risk."],
       },
       {
         title: "Contract revisions",
@@ -1110,7 +1113,7 @@ function buildSummarySections(outcome) {
       {
         title: "Remaining uncertainty",
         content:
-          "Future runs could hit the same boundary because the contract itself did not change.",
+          "Future runs could hit the same bystander boundary because the contract itself did not change.",
       },
     ];
   }
@@ -1120,19 +1123,19 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final answer includes the conflicting interpretation after the participant continued from an oversight checkpoint.",
+          "The final meeting summary includes bystander context after the participant continued from an oversight checkpoint.",
       },
       {
-        title: "Sources",
+        title: "Data used",
         content: [
-          "Used: official product announcement",
-          "Used: major reporting summary",
-          "Included: conflicting research blog",
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Included: bystander voice segment",
         ],
       },
       {
         title: "Escalations",
-        content: ["1 oversight checkpoint surfaced a source conflict."],
+        content: ["1 oversight checkpoint surfaced bystander privacy risk."],
       },
       {
         title: "Contract revisions",
@@ -1141,7 +1144,7 @@ function buildSummarySections(outcome) {
       {
         title: "Remaining uncertainty",
         content:
-          "The interface shows the conflict, but it does not turn the decision into a reusable delegation policy.",
+          "The interface shows the privacy risk, but it does not turn the decision into a reusable delegation policy.",
       },
     ];
   }
@@ -1151,14 +1154,14 @@ function buildSummarySections(outcome) {
       {
         title: "Result",
         content:
-          "The final answer blends official reporting with a conflicting secondary interpretation.",
+          "The final meeting summary includes bystander context without an explicit repair opportunity.",
       },
       {
-        title: "Sources",
+        title: "Data used",
         content: [
-          "Used: official product announcement",
-          "Used: major reporting summary",
-          "Included without repair: conflicting research blog",
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Included without repair: bystander voice segment",
         ],
       },
       {
@@ -1172,7 +1175,38 @@ function buildSummarySections(outcome) {
       {
         title: "Remaining uncertainty",
         content:
-          "Trust decisions are harder to attribute because the user never saw or repaired the autonomy boundary.",
+          "Privacy accountability is harder because the user never saw or repaired the autonomy boundary.",
+      },
+    ];
+  }
+
+  if (outcome === "governance_no_pause") {
+    return [
+      {
+        title: "Result",
+        content:
+          "The meeting summary includes bystander context because the original contract and threshold allowed the assistant to continue.",
+      },
+      {
+        title: "Data used",
+        content: [
+          "Used: user's spoken notes",
+          "Used: user's task preference memory",
+          "Included under original threshold: bystander voice segment",
+        ],
+      },
+      {
+        title: "Escalations",
+        content: ["No ask-back was triggered under the configured threshold."],
+      },
+      {
+        title: "Contract revisions",
+        content: ["The original delegation contract remained active."],
+      },
+      {
+        title: "Remaining uncertainty",
+        content:
+          "The audit records that bystander content was allowed by the current boundary settings.",
       },
     ];
   }
@@ -1180,13 +1214,13 @@ function buildSummarySections(outcome) {
   return [
     {
       title: "Result",
-      content: "The final answer stayed within the original policy.",
+      content: "The meeting summary stayed within the original contract.",
     },
     {
-      title: "Sources",
+      title: "Data used",
       content: [
-        "Used: official product announcement",
-        "Used: major reporting summary",
+        "Used: user's spoken notes",
+        "Used: user's task preference memory",
       ],
     },
     {
@@ -1200,7 +1234,7 @@ function buildSummarySections(outcome) {
     {
       title: "Remaining uncertainty",
       content:
-        "The run reflects the user's initial boundary settings and threshold tolerance.",
+        "The run reflects the user's initial sensing, memory, and disclosure boundaries.",
     },
   ];
 }
@@ -1220,7 +1254,7 @@ function completeRun(outcome) {
   };
   const completionTitleByOutcome = {
     blackbox_hidden_conflict: "Black-box output produced",
-    trace_continued: "Trace-informed output produced",
+    trace_continued: "Oversight-informed output produced",
     default: "Governance-aware output produced",
   };
 
@@ -1329,38 +1363,38 @@ approveOnceButton.addEventListener("click", () => {
   }
 
   if (state.activeCondition === "trace") {
-    addRevision("Participant continued after inspecting low-level trace output.");
+    addRevision("Participant continued after inspecting the privacy marker.");
     addTimelineItem(
-      "Trace reviewed",
-      "Participant continued the run after seeing step-level execution evidence."
+      "Oversight marker reviewed",
+      "Participant continued the run after seeing bystander privacy risk."
     );
     addRuntimeLog(
       "Continue",
-      "Trace review complete. Conflicting source remains in the final synthesis."
+      "Oversight review complete. Bystander content remains in the final output path."
     );
     state.pausedEvent = null;
     state.escalationActive = false;
     scheduleCompletion("trace_continued");
-    logEvent("trace_continue", {
-      source: "Interpretive research blog",
+    logEvent("oversight_continue", {
+      context: "Bystander voice segment",
     });
     return;
   }
 
-  addRevision("Approved the conflicting source once without changing policy.");
+  addRevision("Included an anonymized bystander mention once without changing policy.");
   addTimelineItem(
-    "One-time exception approved",
-    "This path keeps the run moving but weakens the governance argument."
+    "One-time anonymized exception approved",
+    "This path keeps the run moving but does not repair future bystander handling."
   );
   addRuntimeLog(
     "Exception",
-    "Participant allowed the low-trust source once without revising the policy."
+    "Participant allowed an anonymized bystander mention once without revising the policy."
   );
   state.pausedEvent = null;
   state.escalationActive = false;
   scheduleCompletion("approved_exception");
-  logEvent("approve_once", {
-    source: "Interpretive research blog",
+  logEvent("include_anonymized_once", {
+    context: "Bystander voice segment",
   });
 });
 
@@ -1369,20 +1403,20 @@ denySourceButton.addEventListener("click", () => {
     return;
   }
 
-  addRevision("Denied the out-of-policy source for this run.");
+  addRevision("Excluded bystander content for this run.");
   addTimelineItem(
-    "Source denied",
-    "The run rejects the conflicting source but does not revise the broader policy."
+    "Bystander content excluded",
+    "The run rejects the bystander segment but does not revise the broader policy."
   );
   addRuntimeLog(
-    "Deny",
-    "Participant excluded the conflicting source for this run only."
+    "Exclude",
+    "Participant excluded bystander content for this run only."
   );
   state.pausedEvent = null;
   state.escalationActive = false;
   scheduleCompletion("denied_for_run");
-  logEvent("deny_source", {
-    source: "Interpretive research blog",
+  logEvent("exclude_content", {
+    context: "Bystander voice segment",
   });
 });
 

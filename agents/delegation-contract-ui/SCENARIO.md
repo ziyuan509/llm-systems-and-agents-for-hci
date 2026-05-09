@@ -2,89 +2,89 @@
 
 ## Scenario Name
 
-Verifying conflicting claims in a time-bounded research task
+Governing an ambient AI assistant in a shared studio meeting
 
 ## Why This Scenario
 
-This scenario is a strong first prototype case because it naturally surfaces:
+This scenario is a strong workshop prototype because it surfaces:
 
-- source trust decisions
-- escalation timing
-- uncertainty communication
-- policy revision after conflict
+- sensing boundaries in a shared physical space
+- bystander privacy
+- memory and disclosure decisions
+- runtime ask-back under uncertainty
+- policy repair after a boundary conflict
 
 ## User
 
-A graduate student is preparing a short briefing on whether a new AI product feature has changed how online information work should be validated.
+A student uses an ambient AI assistant during a shared studio meeting. The
+assistant can summarize the user's notes, remember action-item preferences, and
+draft a follow-up message.
 
-The user is not an agent developer and does not want to inspect chain-of-thought-like traces or edit prompts.
+The user is not an agent developer and does not want to inspect raw execution
+traces or write prompt rules. Other students may be nearby, so some sensed
+comments should not be stored or disclosed.
 
 ## Task
 
 The user asks:
 
-- "Prepare a short research brief comparing three recent sources about the feature, but avoid rumor-driven blogs, prioritize official sources and reputable reporting, and ask me before citing uncertain claims."
+- "Summarize my shared studio meeting, remember my own action items, and draft a follow-up. Do not store or disclose bystander comments unless I explicitly approve."
 
 ## Initial Contract
 
 The system suggests:
 
-- prioritize official product announcements
-- allow major news and research blogs
-- ban anonymous forum posts
-- ask back when sources conflict
-- stop before exceeding a 15-minute budget
-
-The user revises the contract:
-
-- removes research blogs
-- keeps official sources and major reporting only
-- lowers the confidence threshold for escalation
+- summarize the user's spoken notes
+- remember the user's task preferences
+- do not process bystander voices by default
+- require approval before external sharing
+- ask back when bystander or disclosure risk crosses the threshold
 
 ## Runtime Event
 
-During execution, the agent finds:
+During execution, the assistant handles:
 
-- one official announcement
-- one reputable news summary
-- one secondary source that interprets the feature differently
+- the user's spoken meeting notes
+- the user's task preference memory
+- a bystander voice segment detected while preparing the summary
 
 The system detects that:
 
-- the secondary source conflicts with the official announcement
-- the source type is outside the preferred policy
+- the bystander segment is outside the current sensing boundary
+- storing or disclosing it could affect someone who did not delegate to the agent
 
 ## Ask-Back Moment
 
 The interface tells the user:
 
-- a conflicting source was found
-- it is outside the preferred source policy
-- the agent can either ignore it, include it with a warning, or ask the user to revise the contract
+- another person's voice was detected
+- the current contract does not authorize autonomous processing of bystander voices
+- the user can exclude it, include an anonymized mention once, or edit the contract
 
 The user chooses:
 
-- revise the contract to exclude this source type completely
+- edit the contract to keep bystander voices excluded and require approval before external sharing
 
 ## Repair
 
-The system reruns the synthesis step with the revised policy.
+The system reruns the summary from a safe checkpoint.
 
 It then produces:
 
-- a shorter but more reliable brief
-- a note that one disputed interpretation was excluded due to the user's source policy
+- a meeting summary based on the user's own notes
+- a task preference memory update for the user only
+- an audit note that bystander content was excluded due to the revised contract
 
 ## Why This Scenario Is Good for the MVP
 
-- it can be demoed in a short session
-- it makes policy editing visibly meaningful
-- it distinguishes governance from generic progress tracking
-- it creates a clear ask-back moment without needing a fully autonomous browser agent
+- it is clearly situated in a pervasive AI setting
+- it makes bystander privacy visible without requiring real sensors
+- it turns privacy control into policy repair, not prompt editing
+- it distinguishes governance from generic progress tracking or debugging
 
 ## What This Scenario Lets You Evaluate
 
-- whether users understand the policy objects
+- whether users understand sensing, memory, disclosure, and escalation boundaries
 - whether ask-back timing feels appropriate
-- whether users prefer policy revision over raw step-by-step control
-- whether the final report feels more trustworthy because the contract shaped the process
+- whether users can repair future behavior after seeing a boundary conflict
+- whether the audit summary supports calibrated reliance and accountability

@@ -11,9 +11,9 @@
       <header class="hero">
         <div>
           <p class="eyebrow">delegation-contract-ui</p>
-          <h1>Governable Research Agent Demo</h1>
+          <h1>Governable Ambient AI Demo</h1>
           <p class="hero-copy">
-            A governance-first interface for deep research delegation.
+            A governance-first interface for privacy-sensitive AI in shared spaces.
           </p>
         </div>
         <div class="hero-actions">
@@ -39,28 +39,28 @@
       <section class="workspace">
         <aside class="panel panel-left">
           <div class="panel-header">
-            <h2>Task + Contract</h2>
+            <h2>Shared-Space Task + Contract</h2>
           </div>
 
           <div class="card">
-            <label for="research-question">Research question</label>
-            <textarea id="research-question" rows="5">Prepare a short research brief comparing three recent sources about a new AI product feature. Prioritize official sources and major reporting, avoid rumor-driven blogs, and ask me before citing uncertain claims.</textarea>
+            <label for="research-question">Ambient assistant task</label>
+            <textarea id="research-question" rows="5">Summarize my shared studio meeting, remember my own action items, and draft a follow-up. Do not store or disclose bystander comments unless I explicitly approve.</textarea>
 
             <div class="grid-2">
               <div>
                 <label for="output-format">Output format</label>
                 <select id="output-format">
-                  <option>One-page briefing</option>
-                  <option>Bullet summary</option>
-                  <option>Slide notes</option>
+                  <option>Action-item summary</option>
+                  <option>Private recap</option>
+                  <option>Follow-up draft</option>
                 </select>
               </div>
               <div>
                 <label for="urgency">Urgency</label>
                 <select id="urgency">
-                  <option>Today</option>
-                  <option>This week</option>
-                  <option>Background reading</option>
+                  <option>After this meeting</option>
+                  <option>End of day</option>
+                  <option>Archive only</option>
                 </select>
               </div>
             </div>
@@ -71,15 +71,15 @@
           <div class="card" id="contract-card">
             <h3>Delegation Contract</h3>
             <div class="contract-group">
-              <label><input id="source-official" type="checkbox" checked /> Official announcements</label>
-              <label><input id="source-major" type="checkbox" checked /> Major reporting</label>
-              <label><input id="source-blogs" type="checkbox" checked /> Research blogs</label>
-              <label><input id="ban-forums" type="checkbox" checked /> Ban anonymous forums</label>
+              <label><input id="source-official" type="checkbox" checked /> Summarize my spoken notes</label>
+              <label><input id="source-major" type="checkbox" checked /> Remember my task preferences</label>
+              <label><input id="source-blogs" type="checkbox" /> Process bystander voices</label>
+              <label><input id="ban-forums" type="checkbox" checked /> Require approval before external sharing</label>
             </div>
 
             <div class="grid-2">
               <div>
-                <label for="time-budget">Time budget</label>
+                <label for="time-budget">Review window</label>
                 <select id="time-budget">
                   <option>15 minutes</option>
                   <option>30 minutes</option>
@@ -87,25 +87,25 @@
                 </select>
               </div>
               <div>
-                <label for="tool-scope">Allowed tools</label>
+                <label for="tool-scope">Allowed actions</label>
                 <select id="tool-scope">
-                  <option>Search + synthesis</option>
-                  <option>Search only</option>
-                  <option>Search + synthesis + notes</option>
+                  <option>Summarize + draft follow-up</option>
+                  <option>Summarize only</option>
+                  <option>Summarize + draft + memory update</option>
                 </select>
               </div>
             </div>
 
             <div class="grid-2">
               <div>
-                <label for="confidence-threshold">Confidence threshold</label>
+                <label for="confidence-threshold">Autonomy confidence</label>
                 <input id="confidence-threshold" type="range" min="40" max="90" value="70" />
-                <p class="microcopy"><span id="confidence-value">70</span>% required before autonomous synthesis</p>
+                <p class="microcopy"><span id="confidence-value">70</span>% required before autonomous follow-up</p>
               </div>
               <div>
-                <label for="escalation-threshold">Escalation threshold</label>
+                <label for="escalation-threshold">Privacy escalation threshold</label>
                 <input id="escalation-threshold" type="range" min="30" max="90" value="55" />
-                <p class="microcopy"><span id="escalation-value">55</span>% sensitivity to conflict or policy mismatch</p>
+                <p class="microcopy"><span id="escalation-value">55</span>% sensitivity to bystander or disclosure risk</p>
               </div>
             </div>
 
@@ -116,7 +116,7 @@
               </p>
             </div>
 
-            <button id="start-research" class="disabled" disabled>Start Research</button>
+            <button id="start-research" class="disabled" disabled>Start Ambient Run</button>
           </div>
         </aside>
 
@@ -133,7 +133,7 @@
             <h3>Runtime status</h3>
             <div class="runtime-grid">
               <div>
-                <span class="status-label">Budget use</span>
+                <span class="status-label">Review window</span>
                 <strong id="budget-status">0 / 15 min</strong>
               </div>
               <div>
@@ -152,7 +152,7 @@
           </div>
 
           <div class="card">
-            <h3>Sources consulted</h3>
+            <h3>Context handled</h3>
             <ul id="sources-list" class="source-list"></ul>
           </div>
 
@@ -234,7 +234,7 @@
             <div class="button-stack">
               <button id="approve-once" class="secondary disabled" disabled>Approve Once</button>
               <button id="revise-contract" class="secondary disabled" disabled>Revise Contract</button>
-              <button id="deny-source" class="secondary disabled" disabled>Deny Source</button>
+              <button id="deny-source" class="secondary disabled" disabled>Exclude Content</button>
             </div>
           </div>
 

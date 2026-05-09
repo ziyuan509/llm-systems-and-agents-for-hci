@@ -2,76 +2,82 @@
 
 ## Problem
 
-Ordinary users increasingly rely on long-running agents for online research, but current interfaces often force them into one of two poor choices:
+AI agents are moving from screen-based chat into pervasive environments such as
+shared studios, classrooms, homes, wearables, and ambient assistants. In these
+settings, agents may sense bystanders, remember private context, draft messages,
+and disclose information to others.
 
-- trust a black-box agent
-- inspect low-level traces designed for developers
-
-The system should offer a higher-level governance interface instead.
+Ordinary users need more than a black-box assistant, a static privacy dashboard,
+or a developer-style execution trace. They need an interface for governing what
+the agent may sense, remember, do, disclose, and when it must ask back.
 
 ## Target User
 
-- ordinary knowledge workers
-- graduate students
-- non-expert users of research agents
+- ordinary users of context-aware AI assistants
+- students or knowledge workers in shared spaces
+- non-expert users who need privacy and accountability controls
 
 ## Task Domain
 
-- deep research
-- online information gathering
-- source comparison and synthesis
+- shared-space ambient AI assistance
+- meeting summarization and follow-up drafting
+- bystander privacy and disclosure governance
+- policy repair after a boundary conflict
 
 ## Core Interaction Object
 
 `Delegation contract`
 
-The contract is a user-editable policy layer that shapes how the agent may act.
+A delegation contract is a user-facing, revisable set of boundaries that
+specifies what an AI agent may sense, remember, do, disclose, and when it must
+ask back.
 
 ## Editable Policy Objects
 
-- preferred source types
-- banned source types
-- time budget
-- cost budget
-- confidence threshold for autonomous synthesis
-- escalation rules
-- allowed tools
+- sensing boundary: what context can be processed
+- memory boundary: what can be remembered across tasks
+- tool/action boundary: what actions can be performed autonomously
+- disclosure boundary: who can receive outputs and when approval is required
+- escalation boundary: when uncertainty or risk requires ask-back
 
 ## Minimum UI States
 
-1. Task setup
-2. Contract setup
-3. Runtime execution with ask-back
-4. Post-hoc repair and contract revision
+1. Task setup for a shared-space ambient assistant
+2. Contract setup across sensing, memory, action, disclosure, and escalation
+3. Runtime governance with ask-back
+4. Repair and contract revision
+5. Audit summary that links outcomes to contract rules
 
 ## Runtime Escalation Triggers
 
-- conflicting evidence across sources
-- low confidence in synthesis
-- source outside trusted policy
-- budget overrun risk
-- ambiguous high-impact claim
+- bystander voice or information detected
+- proposed external disclosure
+- attempt to store private context
+- low confidence before a high-impact action
+- policy mismatch between user intent and agent behavior
 
 ## User Actions
 
-- approve
-- revise contract
-- deny action
-- restart step
-- continue with warning
+- include anonymized content once
+- exclude content for this run
+- edit contract for future behavior
+- rerun from a safe checkpoint
+- continue with oversight only in baseline conditions
 
 ## Baseline Conditions
 
-- black-box chat research agent
-- trace-oriented oversight interface
+- black-box ambient assistant
+- oversight baseline with step-level privacy markers
+- delegation-contract interface
 
 ## MVP Boundary
 
 The first version does not need:
 
-- full autonomous browsing stack
-- multi-agent orchestration
-- long-term memory management
-- personalized learning across weeks
+- real sensors or live audio processing
+- production agent orchestration
+- long-term memory infrastructure
+- real message sending
 
-It only needs a believable single-session governance loop.
+It only needs a believable single-session governance loop for privacy-sensitive
+pervasive AI.

@@ -5,23 +5,24 @@ agent systems, and HCI-oriented research prototypes.
 
 ## Current Main Project
 
-`Project 01: Delegation Contract UI for Deep Research Agents`
+`Project 01: Delegation Contracts for Privacy-Sensitive Pervasive AI Agents`
 
-This project investigates how ordinary users can govern delegation to
-long-running research agents without editing raw prompts or reading low-level
-execution traces.
+This project investigates how ordinary users can govern AI agents that sense,
+remember, act, and disclose information in shared physical spaces without
+editing raw prompts or reading low-level execution traces.
 
 ## Research Focus
 
 Core question:
 
-- How can ordinary users set, revise, and repair delegation policies for agentic systems over time?
+- How can ordinary users define, revise, and repair delegation boundaries for privacy-sensitive pervasive AI agents?
 
 Current preferred framing:
 
 - end-user agent governance
 - delegation contracts as the main interaction object
-- deep research as the first application domain
+- privacy-sensitive ambient AI as the first application domain
+- bystander privacy and disclosure boundaries in shared spaces
 
 ## Repository Structure
 
@@ -43,7 +44,7 @@ Current preferred framing:
 - Research questions
 - Related-work map
 - Evaluation plan
-- Clickable demo prototype with study logging in `agents/delegation-contract-ui/demo/`
+- Clickable ambient AI governance demo with study logging in `agents/delegation-contract-ui/demo/`
 
 ## Next Milestone
 
@@ -53,6 +54,7 @@ Move the prototype from runnable demo to study-ready artifact:
 - run pilot walkthroughs with exported session logs
 - add screenshots or a short screen recording
 - document limitations and expected interpretation of study data
+- prepare an anonymized UbiComp/ISWC 2026 workshop short paper package
 
 See `ROADMAP.md` and `agents/delegation-contract-ui/SPEC.md`.
 
