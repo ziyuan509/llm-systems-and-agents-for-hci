@@ -1,10 +1,13 @@
 # Roadmap
 
+Main project: `Privacy-Sensitive Pervasive AI Agents`
+
 ## Phase 1: Scope the Research Project
 
-- Lock the project to `Delegation Contracts for Privacy-Sensitive Pervasive AI Agents`.
+- Lock the project to `Privacy-Sensitive Pervasive AI Agents`.
 - Define the main HCI claim: ordinary users need interaction-level mechanisms to govern AI agents that sense, remember, act, and disclose information in shared physical spaces.
 - Define the first application domain: shared-space ambient assistance.
+- Treat delegation contracts as the core interaction mechanism, not the project title.
 - Finalize the core governance dimensions:
   - sensing
   - memory

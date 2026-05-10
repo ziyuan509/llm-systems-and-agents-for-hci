@@ -10,11 +10,13 @@ This repository is intended to show:
 
 ## Featured Project
 
-`Delegation Contracts for Privacy-Sensitive Pervasive AI Agents`
+`Privacy-Sensitive Pervasive AI Agents`
 
 ## One-line Summary
 
-A governance-first interface prototype that helps ordinary users define, revise, and repair the boundaries of AI agents that sense, remember, act, and disclose information in shared physical spaces.
+A governance-first interface prototype that helps ordinary users define, revise,
+and repair the boundaries of privacy-sensitive pervasive AI agents that sense,
+remember, act, and disclose information in shared physical spaces.
 
 ## Why This Project Matters
 

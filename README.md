@@ -5,11 +5,12 @@ agent systems, and HCI-oriented research prototypes.
 
 ## Current Main Project
 
-`Project 01: Delegation Contracts for Privacy-Sensitive Pervasive AI Agents`
+`Project 01: Privacy-Sensitive Pervasive AI Agents`
 
-This project investigates how ordinary users can govern AI agents that sense,
-remember, act, and disclose information in shared physical spaces without
-editing raw prompts or reading developer-facing execution traces.
+This project investigates how ordinary users can govern privacy-sensitive
+pervasive AI agents that sense, remember, act, and disclose information in
+shared physical spaces without editing raw prompts or reading developer-facing
+execution traces.
 
 ## Research Focus
 
@@ -29,7 +30,7 @@ Current preferred framing:
 | Path | Purpose |
 | --- | --- |
 | `agents/` | Research-oriented agent prototypes. |
-| `agents/delegation-contract-ui/` | Main HCI project for delegation contract design. |
+| `agents/delegation-contract-ui/` | Main prototype for governable pervasive AI agents. |
 | `foundations/` | Minimal LLM and systems foundations work. |
 | `training/` | Training, loss, inference, and finetuning notes or code. |
 | `experiments/` | Runnable studies, probes, and evaluation artifacts. |

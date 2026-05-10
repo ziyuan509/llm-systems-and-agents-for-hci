@@ -248,7 +248,7 @@ select {
 }
 
 .research-mode summary,
-.event-log-card summary,
+.research-log summary,
 .activity-details summary,
 .advanced-settings summary {
   align-items: center;
@@ -267,7 +267,7 @@ select {
 }
 
 .research-mode summary::-webkit-details-marker,
-.event-log-card summary::-webkit-details-marker,
+.research-log summary::-webkit-details-marker,
 .activity-details summary::-webkit-details-marker,
 .advanced-settings summary::-webkit-details-marker {
   display: none;
@@ -284,6 +284,17 @@ select {
   top: 48px;
   width: min(520px, calc(100vw - 32px));
   z-index: 10;
+}
+
+.research-log {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.research-log summary {
+  color: var(--text-main);
+  justify-content: space-between;
 }
 
 .workspace {
@@ -318,7 +329,6 @@ select {
 .app-shell[data-view="run"] .review-nav-card,
 .app-shell[data-view="run"] .rule-update-card,
 .app-shell[data-view="run"] .summary-card,
-.app-shell[data-view="run"] .event-log-card,
 .app-shell[data-view="review"] .task-card,
 .app-shell[data-view="review"] #contract-card,
 .app-shell[data-view="review"] .activity-card,
@@ -337,8 +347,7 @@ select {
 .stepper,
 .section-shell,
 .side-card,
-.decision-card,
-.event-log-card {
+.decision-card {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -419,8 +428,7 @@ select {
 
 .section-shell,
 .side-card,
-.decision-card,
-.event-log-card {
+.decision-card {
   padding: 22px;
 }
 
@@ -880,8 +888,7 @@ input[type="range"] {
   padding-top: 14px;
 }
 
-.activity-details summary,
-.event-log-card summary {
+.activity-details summary {
   color: var(--text-main);
 }
 
@@ -1113,10 +1120,6 @@ input[type="range"] {
   flex-direction: column;
   gap: 5px;
   list-style: none;
-}
-
-.event-log-card {
-  padding: 14px 16px;
 }
 
 .event-log-preview {
