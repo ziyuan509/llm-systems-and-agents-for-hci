@@ -3,259 +3,429 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Delegation Contract Demo</title>
+    <title>Governable Ambient AI</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">delegation-contract-ui</p>
-          <h1>Governable Ambient AI Demo</h1>
-          <p class="hero-copy">
-            A governance-first interface for privacy-sensitive AI in shared spaces.
-          </p>
+    <main class="app-shell" data-view="task">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Governable Ambient AI</h1>
+            <p class="hero-copy">
+              Set clear boundaries for what the assistant can sense, remember, and share.
+            </p>
+          </div>
         </div>
-        <div class="hero-actions">
-          <button id="reset-demo" class="secondary">Reset Demo</button>
+
+        <div class="header-actions">
+          <details class="research-mode">
+            <summary>Research mode</summary>
+            <div class="research-panel">
+              <div class="grid-2 compact">
+                <div>
+                  <label for="participant-id">Participant ID</label>
+                  <input id="participant-id" type="text" placeholder="P01" />
+                </div>
+                <div>
+                  <label for="condition-id">Condition</label>
+                  <select id="condition-id">
+                    <option>Governance UI</option>
+                    <option>Black-box baseline</option>
+                    <option>Oversight baseline</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="session-id">Session ID</label>
+                  <input id="session-id" type="text" readonly />
+                </div>
+                <div>
+                  <label for="researcher-notes">Researcher notes</label>
+                  <input
+                    id="researcher-notes"
+                    type="text"
+                    placeholder="Optional observation tag"
+                  />
+                </div>
+              </div>
+              <p id="condition-copy" class="microcopy condition-copy">
+                Governance UI exposes policy controls, runtime ask-back, and contract repair.
+              </p>
+              <div class="inline-actions">
+                <button id="start-session" type="button">Start session</button>
+                <button id="export-log" class="secondary disabled" type="button" disabled>
+                  Export log
+                </button>
+              </div>
+              <p class="session-status" id="session-status">
+                Start a session before running the scenario so events can be logged.
+              </p>
+            </div>
+          </details>
+          <button id="reset-demo" class="ghost" type="button">Reset</button>
         </div>
       </header>
 
-      <section class="status-strip">
-        <div class="status-card">
-          <span class="status-label">Current stage</span>
-          <strong id="stage-label">Task Setup</strong>
-        </div>
-        <div class="status-card">
-          <span class="status-label">Contract mode</span>
-          <strong id="contract-mode">Draft</strong>
-        </div>
-        <div class="status-card">
-          <span class="status-label">Agent state</span>
-          <strong id="agent-state">Waiting for task</strong>
-        </div>
-      </section>
-
       <section class="workspace">
-        <aside class="panel panel-left">
-          <div class="panel-header">
-            <h2>Shared-Space Task + Contract</h2>
-          </div>
+        <div class="main-column">
+          <nav class="stepper" aria-label="Scenario progress">
+            <div class="step-item is-active" data-progress-step="task">
+              <span>1</span>
+              <strong>Task</strong>
+            </div>
+            <div class="step-item" data-progress-step="boundaries">
+              <span>2</span>
+              <strong>Boundaries</strong>
+            </div>
+            <div class="step-item" data-progress-step="run">
+              <span>3</span>
+              <strong>Run</strong>
+            </div>
+            <div class="step-item" data-progress-step="review">
+              <span>4</span>
+              <strong>Review</strong>
+            </div>
+          </nav>
 
-          <div class="card">
-            <label for="research-question">Ambient assistant task</label>
-            <textarea id="research-question" rows="5">Summarize my shared studio meeting, remember my own action items, and draft a follow-up. Do not store or disclose bystander comments unless I explicitly approve.</textarea>
-
-            <div class="grid-2">
-              <div>
-                <label for="output-format">Output format</label>
-                <select id="output-format">
-                  <option>Action-item summary</option>
-                  <option>Private recap</option>
-                  <option>Follow-up draft</option>
-                </select>
+          <section class="section-shell task-card">
+            <span class="section-icon icon-task" aria-hidden="true">T</span>
+            <div class="section-body">
+              <div class="section-heading">
+                <div>
+                  <p class="section-kicker">Task</p>
+                  <h2>What should the assistant help with?</h2>
+                </div>
               </div>
-              <div>
-                <label for="urgency">Urgency</label>
-                <select id="urgency">
-                  <option>After this meeting</option>
-                  <option>End of day</option>
-                  <option>Archive only</option>
-                </select>
+              <textarea id="research-question" rows="3">Summarize my meeting notes, remember my action items, and draft a follow-up message.</textarea>
+              <div class="task-meta">
+                <span>Shared studio meeting</span>
+                <span>6 people</span>
+                <span id="stage-label">Task Setup</span>
+              </div>
+              <div class="wizard-actions task-actions">
+                <p>Next, define what the assistant can sense, remember, and share.</p>
+                <button id="draft-contract" class="primary-cta" type="button">
+                  Continue to boundaries
+                </button>
               </div>
             </div>
+          </section>
 
-            <button id="draft-contract">Draft Contract</button>
-          </div>
-
-          <div class="card" id="contract-card">
-            <h3>Delegation Contract</h3>
-            <div class="contract-group">
-              <label><input id="summarizeNotes" type="checkbox" checked /> Summarize my spoken notes</label>
-              <label><input id="rememberTaskPreferences" type="checkbox" checked /> Remember my task preferences</label>
-              <label><input id="askBeforePersonalMemory" type="checkbox" checked /> Ask before storing personal details</label>
-              <label><input id="bystanderApprovalRequired" type="checkbox" checked /> Do not store bystander voices without approval</label>
-              <label><input id="externalSharingApproval" type="checkbox" checked /> Require approval before external sharing</label>
-            </div>
-
-            <div class="grid-2">
+          <section class="section-shell" id="contract-card">
+            <div class="section-heading with-icon">
+              <span class="section-icon icon-boundary" aria-hidden="true">B</span>
               <div>
-                <label for="time-budget">Review window</label>
-                <select id="time-budget">
-                  <option>15 minutes</option>
-                  <option>30 minutes</option>
-                  <option>45 minutes</option>
-                </select>
+                <p class="section-kicker">Boundaries</p>
+                <h2>Assistant boundaries</h2>
               </div>
-              <div>
-                <label for="tool-scope">Allowed actions</label>
-                <select id="tool-scope">
-                  <option>Summarize + draft follow-up</option>
-                  <option>Summarize only</option>
-                  <option>Summarize + draft + memory update</option>
-                </select>
+              <div class="contract-state">
+                <span id="contract-mode">Draft</span>
               </div>
             </div>
-
-            <div class="grid-2">
-              <div>
-                <label for="confidence-threshold">Autonomy confidence</label>
-                <input id="confidence-threshold" type="range" min="40" max="90" value="70" />
-                <p class="microcopy"><span id="confidence-value">70</span>% required before autonomous follow-up</p>
-              </div>
-              <div>
-                <label for="escalation-threshold">Privacy escalation threshold</label>
-                <input id="escalation-threshold" type="range" min="30" max="90" value="55" />
-                <p class="microcopy"><span id="escalation-value">55</span>% sensitivity to bystander or disclosure risk</p>
-              </div>
+            <div class="step-navigation">
+              <button id="back-to-task" class="secondary" type="button">
+                Back to task
+              </button>
             </div>
+
+            <div class="boundary-grid">
+              <section class="boundary-category">
+                <div class="category-header">
+                  <span class="category-icon sensing" aria-hidden="true">S</span>
+                  <h3>Sensing</h3>
+                </div>
+                <label class="switch-row">
+                  <span>Use my spoken notes</span>
+                  <input id="summarizeNotes" type="checkbox" checked />
+                </label>
+                <label class="switch-row">
+                  <span>Ask before using bystander speech</span>
+                  <input id="bystanderApprovalRequired" type="checkbox" checked />
+                </label>
+              </section>
+
+              <section class="boundary-category">
+                <div class="category-header">
+                  <span class="category-icon memory" aria-hidden="true">M</span>
+                  <h3>Memory</h3>
+                </div>
+                <label class="switch-row">
+                  <span>Remember my action items</span>
+                  <input id="rememberTaskPreferences" type="checkbox" checked />
+                </label>
+                <label class="switch-row">
+                  <span>Ask before storing personal details</span>
+                  <input id="askBeforePersonalMemory" type="checkbox" checked />
+                </label>
+                <div class="switch-row display-only">
+                  <span>Forget meeting context after summary</span>
+                  <span class="switch off" aria-hidden="true"></span>
+                </div>
+              </section>
+
+              <section class="boundary-category">
+                <div class="category-header">
+                  <span class="category-icon sharing" aria-hidden="true">H</span>
+                  <h3>Sharing</h3>
+                </div>
+                <label class="switch-row">
+                  <span>Ask before sending anything to others</span>
+                  <input id="externalSharingApproval" type="checkbox" checked />
+                </label>
+                <div class="switch-row display-only">
+                  <span>Exclude bystander comments from shared summaries</span>
+                  <span class="switch on" aria-hidden="true"></span>
+                </div>
+              </section>
+
+              <section class="boundary-category">
+                <div class="category-header">
+                  <span class="category-icon autonomy" aria-hidden="true">A</span>
+                  <h3>Autonomy</h3>
+                </div>
+                <div class="switch-row display-only">
+                  <span>Can draft follow-up messages</span>
+                  <span class="switch on amber" aria-hidden="true"></span>
+                </div>
+                <div class="switch-row display-only">
+                  <span>Must ask before sending</span>
+                  <span class="switch on amber" aria-hidden="true"></span>
+                </div>
+                <div class="switch-row display-only">
+                  <span>Pause on privacy risk</span>
+                  <span class="switch on amber" aria-hidden="true"></span>
+                </div>
+              </section>
+            </div>
+
+            <details class="advanced-settings">
+              <summary>Advanced settings</summary>
+              <div class="advanced-content">
+                <div>
+                  <label for="time-budget">Review window</label>
+                  <select id="time-budget">
+                    <option>15 minutes</option>
+                    <option>30 minutes</option>
+                    <option>45 minutes</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="tool-scope">Allowed actions</label>
+                  <select id="tool-scope">
+                    <option>Summarize + draft follow-up</option>
+                    <option>Summarize only</option>
+                    <option>Summarize + draft + memory update</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="confidence-threshold">
+                    Autonomy confidence
+                    <span id="confidence-value">70</span>%
+                  </label>
+                  <input
+                    id="confidence-threshold"
+                    type="range"
+                    min="40"
+                    max="90"
+                    value="70"
+                  />
+                </div>
+                <div>
+                  <label for="escalation-threshold">
+                    Ask-back sensitivity
+                    <span id="escalation-value">55</span>%
+                  </label>
+                  <input
+                    id="escalation-threshold"
+                    type="range"
+                    min="30"
+                    max="90"
+                    value="55"
+                  />
+                </div>
+              </div>
+            </details>
 
             <div class="contract-preview" aria-live="polite">
-              <span class="status-label">Plain-language contract</span>
+              <span>Plain-language contract</span>
               <p id="contract-preview">
                 Draft a contract to see the agent's autonomy boundary in plain language.
               </p>
             </div>
 
-            <button id="start-run" class="disabled" disabled>Start Ambient Run</button>
-          </div>
-        </aside>
+            <div class="boundary-actions">
+              <button id="back-to-task-secondary" class="secondary" type="button">
+                Back
+              </button>
+              <button id="start-run" class="disabled" type="button" disabled>
+                Start run
+              </button>
+            </div>
+          </section>
 
-        <section class="panel panel-center">
-          <div class="panel-header">
-            <h2>Runtime Governance</h2>
-          </div>
-
-          <div class="card timeline-card">
-            <ol id="timeline" class="timeline"></ol>
-          </div>
-
-          <div class="card">
-            <h3>Runtime status</h3>
-            <div class="runtime-grid">
+          <section class="section-shell activity-card">
+            <div class="section-heading with-icon">
+              <span class="section-icon icon-activity" aria-hidden="true">R</span>
               <div>
-                <span class="status-label">Review window</span>
-                <strong id="budget-status">0 / 15 min</strong>
+                <p class="section-kicker">Run</p>
+                <h2>Assistant activity</h2>
               </div>
+              <div class="run-metrics">
+                <span id="agent-state">Waiting for shared-space task</span>
+                <span id="budget-status">0 / 15 min</span>
+                <span id="runtime-confidence">N/A</span>
+              </div>
+            </div>
+            <div class="step-navigation">
+              <button id="back-to-boundaries" class="secondary" type="button">
+                Back to boundaries
+              </button>
+            </div>
+
+            <ol id="timeline" class="timeline"></ol>
+
+            <div class="status-row">
               <div>
-                <span class="status-label">Contract compliance</span>
+                <span>Contract compliance</span>
                 <strong id="compliance-status">No active run</strong>
               </div>
               <div>
-                <span class="status-label">Confidence</span>
-                <strong id="runtime-confidence">N/A</strong>
-              </div>
-              <div>
-                <span class="status-label">Escalations</span>
+                <span>Escalations</span>
                 <strong id="escalation-count">0</strong>
               </div>
             </div>
-          </div>
 
-          <div class="card">
-            <h3>Context handled</h3>
-            <ul id="context-list" class="context-list"></ul>
-          </div>
-
-          <div class="card">
-            <div class="card-header-inline">
-              <h3 id="runtime-log-title">Governance log</h3>
-              <span id="runtime-log-badge" class="mini-badge">Governance</span>
-            </div>
-            <ul id="runtime-log" class="runtime-log"></ul>
-          </div>
-        </section>
-
-        <aside class="panel panel-right">
-          <div class="panel-header">
-            <h2>Intervention + Repair</h2>
-          </div>
-
-          <div class="card">
-            <h3>Study Session</h3>
-            <div class="grid-2">
-              <div>
-                <label for="participant-id">Participant ID</label>
-                <input id="participant-id" type="text" placeholder="P01" />
+            <details class="activity-details">
+              <summary>Handled context and governance log</summary>
+              <div class="details-grid">
+                <div>
+                  <h3>Context handled</h3>
+                  <ul id="context-list" class="context-list"></ul>
+                </div>
+                <div>
+                  <div class="card-header-inline">
+                    <h3 id="runtime-log-title">Governance log</h3>
+                    <span id="runtime-log-badge" class="mini-badge">Governance</span>
+                  </div>
+                  <ul id="runtime-log" class="runtime-log"></ul>
+                </div>
               </div>
+            </details>
+          </section>
+
+          <section class="section-shell review-nav-card">
+            <div class="section-heading with-icon">
+              <span class="section-icon icon-summary" aria-hidden="true">R</span>
               <div>
-                <label for="condition-id">Condition</label>
-                <select id="condition-id">
-                  <option>Governance UI</option>
-                  <option>Black-box baseline</option>
-                  <option>Oversight baseline</option>
-                </select>
+                <p class="section-kicker">Review controls</p>
+                <h2>Need to change anything?</h2>
               </div>
             </div>
-            <div class="grid-2">
-              <div>
-                <label for="session-id">Session ID</label>
-                <input id="session-id" type="text" readonly />
-              </div>
-              <div>
-                <label for="researcher-notes">Researcher notes</label>
-                <input id="researcher-notes" type="text" placeholder="Optional observation tag" />
-              </div>
-            </div>
-            <div class="button-stack">
-              <button id="start-session">Start Study Session</button>
-              <button id="export-log" class="secondary disabled" disabled>Export Session Log</button>
-            </div>
-            <p class="microcopy" id="session-status">
-              Start a session before running the scenario so events can be logged.
+            <p>
+              You can inspect the audit result, return to the run, or edit the task and
+              boundaries before trying another path.
             </p>
-          </div>
+            <div class="wizard-actions review-actions">
+              <button id="back-to-run" class="secondary" type="button">
+                Back to run
+              </button>
+              <button id="review-edit-boundaries" class="secondary" type="button">
+                Edit boundaries
+              </button>
+            </div>
+          </section>
+        </div>
 
-          <div class="card">
-            <h3>Condition behavior</h3>
-            <p id="condition-copy" class="microcopy condition-copy">
-              Governance UI exposes policy controls, runtime ask-back, and contract repair.
-            </p>
-          </div>
-
-          <div class="card callout neutral" id="askback-panel">
-            <h3 id="askback-title">Ask-back panel</h3>
+        <aside class="decision-column">
+          <section class="decision-card callout neutral" id="askback-panel">
+            <div class="decision-heading">
+              <span class="decision-icon" aria-hidden="true">!</span>
+              <div>
+                <p class="section-kicker">Decision</p>
+                <h2 id="askback-title">Ask-back panel</h2>
+              </div>
+            </div>
             <p id="askback-copy">
               The agent will pause here when a contract-relevant event occurs.
             </p>
-            <div class="askback-details">
+
+            <div class="current-rule">
+              <span>Your current rule</span>
+              <strong id="askback-rule">No boundary triggered yet</strong>
+            </div>
+
+            <div class="decision-facts">
               <div>
-                <span class="status-label">Triggered rule</span>
-                <strong id="askback-rule">No boundary triggered yet</strong>
-              </div>
-              <div>
-                <span class="status-label">Risk</span>
+                <span>Risk</span>
                 <strong id="askback-risk">No active risk</strong>
               </div>
               <div>
-                <span class="status-label">Decision impact</span>
+                <span>Decision impact</span>
                 <strong id="askback-impact">No decision needed</strong>
               </div>
             </div>
-            <div class="button-stack">
-              <button id="approve-once" class="secondary disabled" disabled>Include Anonymized Once</button>
-              <button id="revise-contract" class="secondary disabled" disabled>Revise Contract</button>
-              <button id="exclude-content" class="secondary disabled" disabled>Exclude Content</button>
+
+            <div class="decision-actions">
+              <button id="approve-once" class="primary-warn disabled" type="button" disabled>
+                Use once, anonymized
+              </button>
+              <button id="exclude-content" class="secondary disabled" type="button" disabled>
+                Exclude from summary
+              </button>
+              <button id="revise-contract" class="secondary disabled" type="button" disabled>
+                Make this a rule
+              </button>
+              <button
+                id="rerun-step"
+                class="secondary checkpoint-action disabled"
+                type="button"
+                disabled
+              >
+                Rerun from safe checkpoint
+              </button>
             </div>
-          </div>
+          </section>
 
-          <div class="card">
-            <h3>Revision summary</h3>
+          <section class="side-card rule-update-card">
+            <div class="section-heading with-icon">
+              <span class="section-icon icon-rule" aria-hidden="true">U</span>
+              <div>
+                <p class="section-kicker">Repair</p>
+                <h2>Rule update</h2>
+              </div>
+            </div>
+            <div class="rule-change">
+              <div>
+                <span>Before</span>
+                <strong>Ask before using bystander comments</strong>
+              </div>
+              <span aria-hidden="true">to</span>
+              <div>
+                <span>After</span>
+                <strong>Exclude bystander comments by default unless I approve</strong>
+              </div>
+            </div>
             <ul id="revision-list" class="revision-list"></ul>
-            <button id="rerun-step" class="disabled" disabled>Rerun from safe checkpoint</button>
-          </div>
+          </section>
 
-          <div class="card">
-            <h3>Governance audit summary</h3>
+          <section class="side-card summary-card">
+            <div class="section-heading with-icon">
+              <span class="section-icon icon-summary" aria-hidden="true">W</span>
+              <div>
+                <p class="section-kicker">Review</p>
+                <h2>What happened</h2>
+              </div>
+            </div>
             <div id="final-summary" class="final-summary empty">
               Finish the scenario to generate a governance-aware result summary.
             </div>
-          </div>
+          </section>
 
-          <div class="card">
-            <h3>Event Log Preview</h3>
+          <details class="event-log-card">
+            <summary>Audit event log</summary>
             <ul id="event-log-preview" class="event-log-preview"></ul>
-          </div>
+          </details>
         </aside>
       </section>
     </main>

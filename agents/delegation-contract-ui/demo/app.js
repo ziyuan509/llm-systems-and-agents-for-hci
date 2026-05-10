@@ -1,4 +1,5 @@
 // DOM references
+const appShell = document.querySelector(".app-shell");
 const timeline = document.querySelector("#timeline");
 const contextList = document.querySelector("#context-list");
 const revisionList = document.querySelector("#revision-list");
@@ -16,6 +17,7 @@ const runtimeLogBadge = document.querySelector("#runtime-log-badge");
 const conditionCopy = document.querySelector("#condition-copy");
 const contractCard = document.querySelector("#contract-card");
 const contractPreview = document.querySelector("#contract-preview");
+const progressSteps = document.querySelectorAll("[data-progress-step]");
 
 const stageLabel = document.querySelector("#stage-label");
 const contractMode = document.querySelector("#contract-mode");
@@ -39,6 +41,11 @@ const escalationValue = document.querySelector("#escalation-value");
 
 const draftContractButton = document.querySelector("#draft-contract");
 const startRunButton = document.querySelector("#start-run");
+const backToTaskButton = document.querySelector("#back-to-task");
+const backToTaskSecondaryButton = document.querySelector("#back-to-task-secondary");
+const backToBoundariesButton = document.querySelector("#back-to-boundaries");
+const backToRunButton = document.querySelector("#back-to-run");
+const reviewEditBoundariesButton = document.querySelector("#review-edit-boundaries");
 const approveOnceButton = document.querySelector("#approve-once");
 const reviseContractButton = document.querySelector("#revise-contract");
 const excludeContentButton = document.querySelector("#exclude-content");
@@ -72,18 +79,18 @@ const conditionModes = {
     runtimeTitle: "Governance log",
     contractEditable: true,
     stageLabel: "Runtime Governance",
-    draftButton: "Draft Contract",
-    startButton: "Start Ambient Run",
-    askbackTitle: "Ask-back panel",
+    draftButton: "Continue to boundaries",
+    startButton: "Start run",
+    askbackTitle: "No decision needed",
     askbackDefault:
-      "The agent will pause here when a contract-relevant event occurs.",
+      "The assistant will pause here when a boundary needs your decision.",
     conditionCopy:
       "Contract UI exposes controls, ask-back, and durable repair across sensing, memory, actions, disclosure, and escalation.",
     contractModeIdle: "Draft",
     contractModeActive: "Active",
-    approveLabel: "Include Anonymized Once",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Exclude Content",
+    approveLabel: "Use once, anonymized",
+    reviseLabel: "Make this a rule",
+    denyLabel: "Exclude from summary",
     rerunLabel: "Rerun from safe checkpoint",
   },
   blackbox: {
@@ -91,18 +98,19 @@ const conditionModes = {
     runtimeTitle: "System internals hidden",
     contractEditable: false,
     stageLabel: "Black-box Run",
-    draftButton: "Load Baseline Preset",
-    startButton: "Start Baseline Run",
+    draftButton: "Continue with preset",
+    startButton: "Start baseline",
     askbackTitle: "Run interruption",
     askbackDefault:
       "This baseline does not interrupt the run for privacy repair. The system proceeds with its preset behavior.",
     conditionCopy:
-      "Black-box baseline offers no visible controls, no ask-back, and no durable repair; participants only see progress and the final output.",
+      "Black-box baseline offers no visible controls, no ask-back, and no durable repair; " +
+      "participants only see progress and the final output.",
     contractModeIdle: "Preset hidden",
     contractModeActive: "Preset hidden",
-    approveLabel: "Include Anonymized Once",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Exclude Content",
+    approveLabel: "Use once, anonymized",
+    reviseLabel: "Make this a rule",
+    denyLabel: "Exclude from summary",
     rerunLabel: "Rerun from safe checkpoint",
   },
   oversight: {
@@ -110,8 +118,8 @@ const conditionModes = {
     runtimeTitle: "Oversight log",
     contractEditable: false,
     stageLabel: "Oversight Run",
-    draftButton: "Load Oversight Condition",
-    startButton: "Start Oversight Run",
+    draftButton: "Continue to oversight",
+    startButton: "Start oversight run",
     askbackTitle: "Oversight checkpoint",
     askbackDefault:
       "This baseline reveals step-level privacy markers instead of high-level contract repair controls.",
@@ -120,8 +128,8 @@ const conditionModes = {
     contractModeIdle: "Preset hidden",
     contractModeActive: "Oversight visible",
     approveLabel: "Continue Run",
-    reviseLabel: "Revise Contract",
-    denyLabel: "Exclude Content",
+    reviseLabel: "Make this a rule",
+    denyLabel: "Exclude from summary",
     rerunLabel: "Rerun from safe checkpoint",
   },
 };
@@ -269,11 +277,54 @@ function addRuntimeLog(label, detail) {
   renderRuntimeLog();
 }
 
+function getProgressStep(stage) {
+  if (stage === "task_setup") {
+    return "task";
+  }
+  if (stage === "contract_setup") {
+    return "boundaries";
+  }
+  if (stage === "final_summary") {
+    return "review";
+  }
+  return "run";
+}
+
+function syncProgressStep() {
+  const activeStep = getProgressStep(state.stage);
+  const order = ["task", "boundaries", "run", "review"];
+  const activeIndex = order.indexOf(activeStep);
+
+  appShell.dataset.view = activeStep;
+
+  progressSteps.forEach((step) => {
+    const stepIndex = order.indexOf(step.dataset.progressStep);
+    step.classList.toggle("is-active", step.dataset.progressStep === activeStep);
+    step.classList.toggle("is-complete", stepIndex >= 0 && stepIndex < activeIndex);
+  });
+}
+
+function getTimelineStatus(item) {
+  const text = `${item.title} ${item.note}`.toLowerCase();
+
+  if (text.includes("escalation") || text.includes("bystander content")) {
+    return { label: "Needs decision", className: "warning" };
+  }
+  if (text.includes("waiting") || text.includes("paused")) {
+    return { label: "Paused", className: "paused" };
+  }
+  if (text.includes("complete") || text.includes("output produced")) {
+    return { label: "Done", className: "done" };
+  }
+  return { label: "Allowed", className: "allowed" };
+}
+
 // Render functions
 function renderTimeline() {
   clearElement(timeline);
   state.timeline.forEach((item, index) => {
     const li = document.createElement("li");
+    const status = getTimelineStatus(item);
     const indexMarker = createTextElement(
       "span",
       String(index + 1),
@@ -287,7 +338,11 @@ function renderTimeline() {
       createTextElement("strong", item.title),
       createTextElement("span", item.note)
     );
-    li.append(indexMarker, copy);
+    li.append(
+      indexMarker,
+      copy,
+      createTextElement("span", status.label, `timeline-status ${status.className}`)
+    );
     timeline.appendChild(li);
   });
 }
@@ -456,7 +511,8 @@ function buildContractPreview() {
   }
 
   lines.push(
-    "If the situation involves bystander data, ambiguous consent, or external disclosure, the assistant should pause and ask back instead of acting autonomously."
+    "If the situation involves bystander data, ambiguous consent, or external disclosure, " +
+      "the assistant should pause and ask back instead of acting autonomously."
   );
 
   return lines.join(" ");
@@ -498,7 +554,7 @@ function applyConditionUI() {
 
 function resetAskbackPanel() {
   const config = getConditionConfig();
-  askbackPanel.className = "card callout neutral";
+  askbackPanel.className = "decision-card callout neutral";
   askbackTitle.textContent = config.askbackTitle;
   askbackCopy.textContent = config.askbackDefault;
   askbackRule.textContent = "No boundary triggered yet";
@@ -507,6 +563,87 @@ function resetAskbackPanel() {
   setButtonEnabled(approveOnceButton, false);
   setButtonEnabled(reviseContractButton, false);
   setButtonEnabled(excludeContentButton, false);
+}
+
+function resetRunProgress() {
+  clearTimer();
+  state.runStarted = false;
+  state.escalationActive = false;
+  state.revised = false;
+  state.completed = false;
+  state.escalationEvents = 0;
+  state.contexts = [];
+  state.revisions = [];
+  state.runtimeLog = [];
+  state.runtimeBudgetUsed = 0;
+  state.currentConfidence = 68;
+  state.summarySections = [];
+  state.queuedSteps = [];
+  state.pausedEvent = null;
+  state.blockedContextIds = [];
+  state.runOutcome = "governance_repair";
+
+  budgetStatus.textContent = `0 / ${getTimeBudgetLimit()} min`;
+  complianceStatus.textContent = "No active run";
+  runtimeConfidence.textContent = "N/A";
+  escalationCount.textContent = "0";
+  renderContextRecords();
+  renderRevisions();
+  renderRuntimeLog();
+  renderSummary();
+  resetAskbackPanel();
+  setButtonEnabled(rerunStepButton, false);
+}
+
+function goToTask() {
+  resetRunProgress();
+  state.stage = "task_setup";
+  state.contractDrafted = false;
+  state.timeline = [];
+  syncProgressStep();
+
+  stageLabel.textContent = "Task Setup";
+  contractMode.textContent = getConditionConfig().contractModeIdle;
+  agentState.textContent = "Waiting for shared-space task";
+  setButtonEnabled(startRunButton, false);
+  addTimelineItem("Task received", scenario.taskNote);
+}
+
+function goToBoundaries() {
+  resetRunProgress();
+  state.stage = "contract_setup";
+  state.contractDrafted = true;
+  state.timeline = [];
+  syncProgressStep();
+
+  stageLabel.textContent = "Contract Setup";
+  contractMode.textContent = getConditionConfig().contractEditable
+    ? "Drafted by system"
+    : getConditionConfig().contractModeIdle;
+  agentState.textContent = "Ready for review";
+  setButtonEnabled(startRunButton, true);
+  addTimelineItem("Task received", scenario.taskNote);
+  addTimelineItem(
+    "Draft contract prepared",
+    "System proposes sensing, memory, disclosure, and escalation defaults."
+  );
+}
+
+function goToRunReview() {
+  clearTimer();
+  state.stage = "runtime";
+  state.completed = false;
+  state.escalationActive = false;
+  state.pausedEvent = null;
+  syncProgressStep();
+
+  stageLabel.textContent = getConditionConfig().stageLabel;
+  agentState.textContent = "Run ready for review";
+  complianceStatus.textContent = "Previous run available for review";
+  renderSummary();
+  resetAskbackPanel();
+  setButtonEnabled(startRunButton, false);
+  setButtonEnabled(rerunStepButton, false);
 }
 
 function resetRunState() {
@@ -549,6 +686,7 @@ function initialize() {
   resetRunState();
   setDefaultControls();
   applyConditionUI();
+  syncProgressStep();
 
   stageLabel.textContent = "Task Setup";
   agentState.textContent = "Waiting for shared-space task";
@@ -577,6 +715,7 @@ function draftContract() {
   const config = getConditionConfig();
   state.contractDrafted = true;
   state.stage = "contract_setup";
+  syncProgressStep();
 
   stageLabel.textContent = "Contract Setup";
   contractMode.textContent = config.contractEditable
@@ -651,6 +790,7 @@ function startAmbientRun() {
   state.stage = "runtime";
   state.queuedSteps = buildRunQueue();
   state.currentConfidence = 68;
+  syncProgressStep();
 
   stageLabel.textContent = config.stageLabel;
   contractMode.textContent = config.contractModeActive;
@@ -844,6 +984,7 @@ function triggerGovernanceAskback(evaluation) {
   state.escalationEvents += 1;
   state.stage = "askback";
   state.runOutcome = "governance_repair";
+  syncProgressStep();
 
   stageLabel.textContent = "Ask-Back";
   agentState.textContent = "Paused for policy decision";
@@ -864,18 +1005,21 @@ function triggerGovernanceAskback(evaluation) {
     `Paused at privacy risk score ${evaluation.riskScore} for ${evaluation.context.name}.`
   );
 
-  askbackPanel.className = "card callout warning";
-  askbackTitle.textContent = "Governance checkpoint";
+  askbackPanel.className = "decision-card callout warning";
+  askbackTitle.textContent = "The assistant needs your decision";
   askbackCopy.textContent = evaluation.outsidePolicy
-    ? "The assistant detected content that may include a bystander comment. The current contract requires approval before storing or disclosing bystander information."
-    : "The assistant found privacy-sensitive context. The current contract requires ask-back before storing personal details or disclosing content externally.";
+    ? "Possible bystander comment detected. The assistant found a comment " +
+      "that may belong to someone else in the shared studio."
+    : "The assistant found privacy-sensitive context. " +
+      "The current contract requires ask-back before storing personal details or disclosing content externally.";
   askbackRule.textContent = evaluation.outsidePolicy
     ? "Bystander data requires approval."
     : "Personal details require approval before storage or disclosure.";
   askbackRisk.textContent =
     "The detected comment may belong to another person in the shared space.";
   askbackImpact.textContent =
-    "Approving will include this content once. Excluding will remove it from the summary. Revising the contract will apply this rule to future similar cases.";
+    "Approving will include this content once. Excluding will remove it from the summary. " +
+    "Revising the contract will apply this rule to future similar cases.";
   setButtonEnabled(approveOnceButton, true);
   setButtonEnabled(reviseContractButton, true);
   setButtonEnabled(excludeContentButton, true);
@@ -897,6 +1041,7 @@ function triggerOversightPause(evaluation) {
   state.escalationEvents += 1;
   state.stage = "oversight_pause";
   state.runOutcome = "oversight_continued";
+  syncProgressStep();
 
   stageLabel.textContent = "Oversight Checkpoint";
   agentState.textContent = "Paused for oversight review";
@@ -913,12 +1058,15 @@ function triggerOversightPause(evaluation) {
     "A bystander voice segment was detected while preparing the shared-space summary."
   );
 
-  askbackPanel.className = "card callout neutral";
+  askbackPanel.className = "decision-card callout neutral";
   askbackTitle.textContent = "Oversight checkpoint";
   askbackCopy.textContent =
-    "The latest context includes another person's voice. This baseline can continue the run, but it does not offer contract repair as the main decision.";
-  askbackRule.textContent = "No editable delegation boundary is available in this baseline.";
-  askbackRisk.textContent = `${evaluation.context.name} may be stored or disclosed without a reusable privacy rule.`;
+    "The latest context includes another person's voice. This baseline can continue the run, " +
+    "but it does not offer contract repair as the main decision.";
+  askbackRule.textContent =
+    "No editable delegation boundary is available in this baseline.";
+  askbackRisk.textContent =
+    `${evaluation.context.name} may be stored or disclosed without a reusable privacy rule.`;
   askbackImpact.textContent =
     "Continuing keeps bystander content in the final output path without revising future autonomy.";
   setButtonEnabled(approveOnceButton, true);
@@ -938,6 +1086,7 @@ function reviseContract() {
 
   state.revised = true;
   state.stage = "repair";
+  syncProgressStep();
   state.escalationActive = false;
   state.pausedEvent = null;
   state.blockedContextIds.push("bystander");
@@ -971,12 +1120,15 @@ function reviseContract() {
     "Memory update blocked. Future personal details from shared-space meetings require confirmation before storage."
   );
 
-  askbackPanel.className = "card callout safe";
+  askbackPanel.className = "decision-card callout safe";
   askbackTitle.textContent = "Repair recorded";
   askbackCopy.textContent =
-    "Revision recorded. The system can rerun the summary without storing or disclosing bystander content, and similar personal details now require confirmation before memory updates.";
-  askbackRule.textContent = "Sensing boundary updated: bystander voices remain excluded.";
-  askbackRisk.textContent = "The bystander comment will not shape this meeting summary or future memory.";
+    "Revision recorded. The system can rerun the summary without storing or disclosing " +
+    "bystander content, and similar personal details now require confirmation before memory updates.";
+  askbackRule.textContent =
+    "Sensing boundary updated: bystander voices remain excluded.";
+  askbackRisk.textContent =
+    "The bystander comment will not shape this meeting summary or future memory.";
   askbackImpact.textContent =
     "The agent can continue from the checkpoint under revised sensing, memory, and disclosure boundaries.";
   setButtonEnabled(approveOnceButton, false);
@@ -1002,6 +1154,7 @@ function rerunStep() {
 
   state.stage = "rerun";
   state.runOutcome = "governance_repair";
+  syncProgressStep();
   state.runtimeBudgetUsed += 2;
   state.currentConfidence = clampConfidence(state.currentConfidence + 8);
 
@@ -1034,6 +1187,7 @@ function scheduleCompletion(outcome) {
 
 function handleSynthesisStep() {
   state.stage = "synthesis";
+  syncProgressStep();
   agentState.textContent = "Preparing meeting summary";
   complianceStatus.textContent =
     state.activeCondition === "blackbox"
@@ -1330,6 +1484,7 @@ function completeRun(outcome) {
   state.pausedEvent = null;
   state.stage = "final_summary";
   state.summarySections = buildSummarySections(outcome);
+  syncProgressStep();
   const finalConfidenceByOutcome = {
     governance_repair: 84,
     blackbox_hidden_conflict: 71,
@@ -1434,6 +1589,11 @@ function exportSessionLog() {
 // Event wiring
 draftContractButton.addEventListener("click", draftContract);
 startRunButton.addEventListener("click", startAmbientRun);
+backToTaskButton.addEventListener("click", goToTask);
+backToTaskSecondaryButton.addEventListener("click", goToTask);
+backToBoundariesButton.addEventListener("click", goToBoundaries);
+backToRunButton.addEventListener("click", goToRunReview);
+reviewEditBoundariesButton.addEventListener("click", goToBoundaries);
 reviseContractButton.addEventListener("click", reviseContract);
 rerunStepButton.addEventListener("click", rerunStep);
 resetDemoButton.addEventListener("click", initialize);
@@ -1464,7 +1624,10 @@ approveOnceButton.addEventListener("click", () => {
     return;
   }
 
-  addRevision("Approved once: this content may be used for the current summary, but future bystander-related content will still require approval.");
+  addRevision(
+    "Approved once: this content may be used for the current summary, " +
+      "but future bystander-related content will still require approval."
+  );
   addTimelineItem(
     "One-time anonymized exception approved",
     "This path keeps the run moving but does not repair future bystander handling."
